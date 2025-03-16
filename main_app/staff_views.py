@@ -75,7 +75,7 @@ def get_students(request):
         for student in students:
             data = {
                     "id": student.id,
-                    "name": student.admin.last_name + " " + student.admin.first_name
+                    "name": student.admin.first_name + " " + student.admin.last_name
                     }
             student_data.append(data)
         return JsonResponse(json.dumps(student_data), content_type='application/json', safe=False)
@@ -164,7 +164,7 @@ def get_student_attendance(request):
         student_data = []
         for attendance in attendance_data:
             data = {"id": attendance.student.admin.id,
-                    "name": attendance.student.admin.last_name + " " + attendance.student.admin.first_name,
+                    "name": attendance.student.admin.first_name + " " + attendance.student.admin.last_name,
                     "status": attendance.status}
             student_data.append(data)
         return JsonResponse(json.dumps(student_data), content_type='application/json', safe=False)
