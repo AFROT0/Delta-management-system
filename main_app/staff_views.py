@@ -95,8 +95,6 @@ def student_details(request):
     },
     content_type='application/json', safe=False)
 
-
-
 @csrf_exempt
 def save_attendance(request):
     student_data = request.POST.get('student_ids')

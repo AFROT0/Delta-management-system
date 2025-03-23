@@ -171,16 +171,20 @@ def add_course(request):
     if request.method == 'POST':
         if form.is_valid():
             name = form.cleaned_data.get('name')
-            try:
-                course = Course()
-                course.name = name
-                course.save()
-                messages.success(request, "Successfully Added")
-                return redirect(reverse('add_course'))
-            except:
-                messages.error(request, "Could Not Add")
+            # Check if course with the same name already exists
+            if Course.objects.filter(name__iexact=name).exists():
+                messages.error(request, "Course with this name already exists")
+            else:
+                try:
+                    course = Course()
+                    course.name = name
+                    course.save()
+                    messages.success(request, "Successfully Added")
+                    return redirect(reverse('add_course'))
+                except Exception as e:
+                    messages.error(request, f"Could Not Add: {str(e)}")
         else:
-            messages.error(request, "Could Not Add")
+            messages.error(request, "Could Not Add: Form is invalid")
     return render(request, 'hod_template/add_course_template.html', context)
 
 
@@ -195,22 +199,25 @@ def add_subject(request):
             name = form.cleaned_data.get('name')
             course = form.cleaned_data.get('course')
             staff = form.cleaned_data.get('staff')
-            try:
-                subject = Subject()
-                subject.name = name
-                subject.staff = staff
-                subject.course = course
-                subject.save()
-                messages.success(request, "Successfully Added")
-                return redirect(reverse('add_subject'))
-
-            except Exception as e:
-                messages.error(request, "Could Not Add " + str(e))
+            
+            # Check if subject with the same name already exists in the same course
+            if Subject.objects.filter(name__iexact=name, course=course).exists():
+                messages.error(request, "Subject with this name already exists in the selected course")
+            else:
+                try:
+                    subject = Subject()
+                    subject.name = name
+                    subject.staff = staff
+                    subject.course = course
+                    subject.save()
+                    messages.success(request, "Successfully Added")
+                    return redirect(reverse('add_subject'))
+                except Exception as e:
+                    messages.error(request, f"Could Not Add: {str(e)}")
         else:
-            messages.error(request, "Fill Form Properly")
+            messages.error(request, "Please fill all required fields correctly")
 
     return render(request, 'hod_template/add_subject_template.html', context)
-
 
 def manage_staff(request):
     allStaff = CustomUser.objects.filter(user_type=2)
@@ -401,16 +408,37 @@ def edit_subject(request, subject_id):
 def add_session(request):
     form = SessionForm(request.POST or None)
     context = {'form': form, 'page_title': 'Add Session'}
+    
     if request.method == 'POST':
         if form.is_valid():
+            start_year = form.cleaned_data.get('start_year')
+            end_year = form.cleaned_data.get('end_year')
+            
+            # Check if start date equals end date
+            if start_year == end_year:
+                messages.error(request, 'Start date cannot be the same as end date')
+                return render(request, "hod_template/add_session_template.html", context)
+            
+            # Check if start date is after end date
+            if start_year > end_year:
+                messages.error(request, 'Start date cannot be after end date')
+                return render(request, "hod_template/add_session_template.html", context)
+            
+            # Check if session with same dates already exists
+            if Session.objects.filter(start_year=start_year, end_year=end_year).exists():
+                messages.error(request, 'Session with these dates already exists')
+                return render(request, "hod_template/add_session_template.html", context)
+            
             try:
                 form.save()
-                messages.success(request, "Session Created")
+                messages.success(request, "Session was created successfully")
                 return redirect(reverse('add_session'))
             except Exception as e:
-                messages.error(request, 'Could Not Add ' + str(e))
+                messages.error(request, f'Failed to add session: {str(e)}')
         else:
-            messages.error(request, 'Fill Form Properly ')
+            # This shows when form validation fails
+            messages.error(request, 'This session already exists')
+    
     return render(request, "hod_template/add_session_template.html", context)
 
 

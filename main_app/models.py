@@ -33,7 +33,14 @@ class CustomUserManager(UserManager):
 class Session(models.Model):
     start_year = models.DateField()
     end_year = models.DateField()
-
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['start_year', 'end_year'], 
+                name='unique_session'
+            )
+        ]
     def __str__(self):
         return "From " + str(self.start_year) + " to " + str(self.end_year)
 
