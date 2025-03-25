@@ -15,6 +15,7 @@ from .models import *
 import barcode
 from barcode.writer import ImageWriter
 from django.core.files.base import ContentFile
+from django.db import transaction
 from io import BytesIO
 
 
@@ -719,16 +720,76 @@ def send_staff_notification(request):
 
 
 def delete_staff(request, staff_id):
+    """
+    Delete a staff member and all their related records safely using a transaction.
+    Handles updating subjects and cascade deletion of feedback, leave reports, etc.
+    
+    Args:
+        request: HTTP request object
+        staff_id: ID of the staff member to delete
+        
+    Returns:
+        Redirects to manage_staff view with success/error message
+    """
     staff = get_object_or_404(CustomUser, staff__id=staff_id)
-    staff.delete()
-    messages.success(request, "Staff deleted successfully!")
+    
+    try:
+        with transaction.atomic():
+            # Store staff name before deletion for message
+            staff_name = f"{staff.first_name} {staff.last_name}"
+            
+            # Get all subjects taught by this staff
+            staff_subjects = Subject.objects.filter(staff=staff.staff)
+            
+            # Delete attendance records for subjects taught by this staff
+            attendance_records = Attendance.objects.filter(subject__in=staff_subjects)
+            AttendanceReport.objects.filter(attendance__in=attendance_records).delete()
+            attendance_records.delete()
+            
+            # Delete notifications, feedback, and leave reports
+            NotificationStaff.objects.filter(staff=staff.staff).delete()
+            FeedbackStaff.objects.filter(staff=staff.staff).delete()
+            LeaveReportStaff.objects.filter(staff=staff.staff).delete()
+            
+            # Delete subjects taught by staff
+            staff_subjects.delete()
+            
+            # Delete the staff user which will cascade delete Staff model
+            staff.delete()
+            
+            messages.success(request, f"Staff member '{staff_name}' and all related records deleted successfully!")
+            
+    except Exception as e:
+        messages.error(request, f"Error deleting staff member: {str(e)}")
+        
     return redirect(reverse('manage_staff'))
 
 
 def delete_student(request, student_id):
+    """
+    Delete a student and all their related records after checking dependencies.
+    Handles cascade deletion of attendance records and leave reports.
+    """
     student = get_object_or_404(CustomUser, student__id=student_id)
-    student.delete()
-    messages.success(request, "Student deleted successfully!")
+    
+    try:
+        # Begin transaction
+        with transaction.atomic():
+            # Delete related records first
+            AttendanceReport.objects.filter(student=student.student).delete()
+            LeaveReportStudent.objects.filter(student=student.student).delete()
+            FeedbackStudent.objects.filter(student=student.student).delete()
+            NotificationStudent.objects.filter(student=student.student).delete()
+            
+            # Delete the student and user
+            student_name = f"{student.first_name} {student.last_name}"
+            student.delete()
+            
+            messages.success(request, f"Student '{student_name}' and all related records deleted successfully!")
+            
+    except Exception as e:
+        messages.error(request, f"Error deleting student: {str(e)}")
+        
     return redirect(reverse('manage_student'))
 
 
