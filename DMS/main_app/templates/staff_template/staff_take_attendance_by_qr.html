@@ -1,0 +1,377 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}Take Attendance by QR Code{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+    /* Base card */
+    .attendance-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Form controls */
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #c0c0c0;
+        padding: 0.5rem 0.75rem;
+        line-height: 1.2;
+        background: white;
+        color: #333333;
+        font-size: 16px;
+        font-weight: 400;
+    }
+
+    .form-control::placeholder {
+        color: #757575;
+        opacity: 1;
+    }
+
+    /* Form labels */
+    label {
+        color: #424242;
+        font-weight: 500;
+        font-size: 14px;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    /* Select dropdown specific styles */
+    select.form-control {
+        cursor: pointer;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23424242' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1em;
+        padding-right: 2.5rem;
+    }
+
+    /* Read-only inputs */
+    .form-control[readonly] {
+        background-color: #f5f5f5;
+        color: #424242;
+        border-color: #e0e0e0;
+    }
+
+    /* Button styles */
+    .btn-take-attendance {
+        background: #4caf50;
+        color: white;
+        border-radius: 8px;
+        padding: 1rem 2rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        border: none;
+        width: 100%;
+    }
+
+    /* Student info card */
+    .student-info {
+        display: none;
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .student-info.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+
+    /* Message boxes styles */
+    .success-message, .error-message {
+        display: none;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        font-weight: 500;
+    }
+
+    .success-message {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #a5d6a7;
+    }
+
+    .error-message {
+        background-color: #ffebee;
+        color: #c62828;
+        border: 1px solid #ef9a9a;
+    }
+
+    .success-message i, .error-message i {
+        margin-right: 0.5rem;
+    }
+
+    .success-message.show, .error-message.show {
+        display: block;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="attendance-card">
+                    <form id="attendanceForm" method="POST" action="{% url 'staff_take_attendance_by_qr' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="student_id" id="attendance_student_id">
+                        <input type="hidden" name="subject_id" id="attendance_subject_id">
+                        <input type="hidden" name="attendance_date" value="{{ today|date:'Y-m-d' }}">
+                        <input type="hidden" name="attendance_status" id="attendance_status">
+                        <div class="form-group">
+                            <label for="student_id">Student ID/Code</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="student_id" id="student_id" placeholder="Enter student ID" required>
+                            </div>
+                            <small class="form-text text-muted">scan qr/id to record attendance</small>
+                        </div>
+
+                        <div class="student-info" id="student_info">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Student Name</label>
+                                        <input type="text" class="form-control" id="student_name" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Session</label>
+                                        <input type="text" class="form-control" id="student_session" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="attendance-details" id="attendance_details" style="display: none;">
+                            <div class="form-group">
+                                <label for="subject">Subject</label>
+                                <select class="form-control" name="subject" id="subject" required>
+                                    <option value="">Select Subject</option>
+                                    {% for subject in subjects %}
+                                    <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="attendance_date">Attendance Date</label>
+                                <input type="date" class="form-control" name="attendance_date" id="attendance_date" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-take-attendance">
+                                <i class="fas fa-check-circle mr-2"></i>Take Attendance
+                            </button>
+                        </div>
+                    </form>
+                    <div id="success_message" class="success-message">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <span id="success_text"></span>
+                    </div>
+
+                    <div id="error_message" class="error-message">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span id="error_text"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default date to today
+    document.getElementById('attendance_date').valueAsDate = new Date();
+
+    // Form submission handler
+    const form = document.getElementById('attendanceForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Get the selected subject ID
+        const subjectSelect = document.getElementById('subject');
+        const subjectId = subjectSelect.value;
+        
+        if (!subjectId) {
+            showError('Please select a subject');
+            return;
+        }
+        
+        // Set the subject_id in the hidden input
+        document.getElementById('attendance_subject_id').value = subjectId;
+        
+        // Get form data
+        const formData = new FormData(form);
+        
+        // Disable submit button and show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+        submitBtn.disabled = true;
+
+        // Submit the form
+        fetch('{% url "staff_take_attendance_by_qr" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showSuccess(data.message);
+                // Clear form
+                document.getElementById('student_id').value = '';
+                document.getElementById('student_info').classList.remove('active');
+                document.getElementById('attendance_details').style.display = 'none';
+            } else {
+                showError(data.message || 'An error occurred');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('An error occurred while processing your request.');
+        })
+        .finally(() => {
+            // Reset button state
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+});
+
+function showError(message) {
+    const errorDiv = document.getElementById('error_message');
+    const errorText = document.getElementById('error_text');
+    errorText.textContent = message;
+    errorDiv.style.display = 'block';
+    errorDiv.classList.add('show');
+    
+    // Hide success message if shown
+    const successDiv = document.getElementById('success_message');
+    successDiv.style.display = 'none';
+    successDiv.classList.remove('show');
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        errorDiv.style.display = 'none';
+        errorDiv.classList.remove('show');
+    }, 5000);
+}
+
+function showSuccess(message) {
+    const successDiv = document.getElementById('success_message');
+    const successText = document.getElementById('success_text');
+    successText.textContent = message;
+    successDiv.style.display = 'block';
+    successDiv.classList.add('show');
+    
+    // Hide error message if shown
+    const errorDiv = document.getElementById('error_message');
+    errorDiv.style.display = 'none';
+    errorDiv.classList.remove('show');
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        successDiv.style.display = 'none';
+        successDiv.classList.remove('show');
+    }, 5000);
+}
+
+// Handle student lookup
+let typingTimer;
+const doneTypingInterval = 500; // wait for 500ms after user stops typing
+
+document.getElementById('student_id').addEventListener('input', function() {
+    clearTimeout(typingTimer);
+    const studentId = this.value;
+    
+    // Hide student info and attendance details when input is empty
+    if (!studentId) {
+        document.getElementById('student_info').classList.remove('active');
+        document.getElementById('attendance_details').style.display = 'none';
+        return;
+    }
+
+    // Wait for user to stop typing before making the request
+    typingTimer = setTimeout(() => {
+        // Show loading state
+        document.getElementById('student_info').classList.remove('active');
+        document.getElementById('attendance_details').style.display = 'none';
+        
+        fetch('{% url "staff_get_student_session" %}', {
+            method: 'POST',
+            body: new URLSearchParams({
+                'student_id': studentId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            }),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status); // Debug log
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Network response was not ok');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data); // Debug log
+            if (data.error) {
+                showError(data.error);
+                return;
+            }
+
+            // Show student info and attendance details only if we have valid data
+            if (data.name && data.session) {
+                document.getElementById('student_name').value = data.name;
+                document.getElementById('student_session').value = data.session;
+                document.getElementById('student_info').classList.add('active');
+                document.getElementById('attendance_details').style.display = 'block';
+            } else {
+                showError('Student data not found. Please check the ID and try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error); // Debug log
+            showError(error.message || 'Error fetching student data. Please try again.');
+        });
+    }, doneTypingInterval);
+});
+</script>
+{% endblock custom_js %}

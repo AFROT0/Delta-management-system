@@ -3,6 +3,21 @@
 {% block page_title %}{{page_title}}{% endblock page_title %}
 {% block custom_css %}
 <style>
+    /* Bigger dropdown labels */
+    .form-group label {
+        font-size: 1.0em !important;
+        font-weight: 500 !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* Adjust select size to match */
+    .form-group select.form-control {
+        height: 45px !important;
+        padding: 8px 12px !important;
+        font-size: 1.0em !important;
+    }
+</style>
+<style>
 .attendance_div_red{
     padding: 10px;
     background: #f44336;

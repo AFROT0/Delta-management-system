@@ -1,4 +1,4 @@
-"""college_management_system URL Configuration
+"""Delta_management_system URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/3.1/topics/http/urls/
@@ -19,6 +19,7 @@ from . import hod_views, staff_views, student_views, views
 
 urlpatterns = [
     path("", views.login_page, name='login_page'),
+    path("about/", views.about_page, name='about_page'),
     path("get_attendance", views.get_attendance, name='get_attendance'),
     path("firebase-messaging-sw.js", views.showFirebaseJS, name='showFirebaseJS'),
     path("doLogin/", views.doLogin, name='user_login'),
@@ -89,21 +90,19 @@ urlpatterns = [
     path("staff/feedback/", staff_views.staff_feedback, name='staff_feedback'),
     path("staff/view/profile/", staff_views.staff_view_profile,
          name='staff_view_profile'),
-    path("staff/attendance/take/", staff_views.staff_take_attendance,
-         name='staff_take_attendance'),
-     path("staff/attendance/take/barcode", staff_views.staff_take_attendance_barcode,
-         name='staff_take_attendance_by_barcode'),
-    path("staff/attendance/update/", staff_views.staff_update_attendance,
-         name='staff_update_attendance'),
+    path("staff/take/attendance/", staff_views.staff_take_attendance, name='staff_take_attendance'),
+    path("staff/attendance/take/qr/", staff_views.staff_take_attendance_by_qr, name='staff_take_attendance_by_qr'),
+    path("staff/get-student-session/", staff_views.staff_get_student_session, name='staff_get_student_session'),
+    path("staff/attendance/update/", staff_views.staff_update_attendance, name='staff_update_attendance'),
     path("staff/get_students/", staff_views.get_students, name='get_students'),
-     path("student/details",
+    path("student/details",
          staff_views.student_details, name='student_details'),
     path("staff/attendance/fetch/", staff_views.get_student_attendance,
          name='get_student_attendance'),
     path("staff/attendance/save/",
          staff_views.save_attendance, name='save_attendance'),
-    path("staff/attendance/save/barcode",
-         staff_views.save_attendance_barcode, name='save_attendance_barcode'),
+    path("staff/attendance/save/qr",
+         staff_views.save_attendance_qr, name='save_attendance_qr'),
     path("staff/attendance/update/",
          staff_views.update_attendance, name='update_attendance'),
     path("staff/fcmtoken/", staff_views.staff_fcmtoken, name='staff_fcmtoken'),
@@ -133,5 +132,10 @@ urlpatterns = [
          name="student_view_notification"),
     path('student/view/result/', student_views.student_view_result,
          name='student_view_result'),
+    path('student/nfc-attendance', student_views.nfc_attendance_view, name='student_nfc_attendance'),
+    path('student/mark-nfc-attendance', student_views.mark_nfc_attendance, name='student_mark_nfc_attendance'),
 
+    # Staff NFC Attendance
+    path('staff/nfc-attendance', staff_views.staff_nfc_attendance_view, name='staff_nfc_attendance'),
+    path('staff/mark-nfc-attendance', staff_views.staff_mark_nfc_attendance, name='staff_mark_nfc_attendance'),
 ]

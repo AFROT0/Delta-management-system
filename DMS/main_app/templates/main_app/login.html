@@ -1,0 +1,392 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>D.M.S | Log In</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css" rel="stylesheet">
+    <style>
+        .login-page {
+            min-height: 100vh;
+            background: linear-gradient(-45deg, #1e3c72, #2a5298, #2E86C1, #3498db);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Added animated background particles */
+        .login-page::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 10%, transparent 10.5%);
+            background-size: 50px 50px;
+            animation: moveParticles 20s linear infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes moveParticles {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50px); }
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .split-container {
+            display: flex;
+            width: 1200px;
+            max-width: 95%;
+            min-height: 600px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .split-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo-section {
+            flex: 1.2;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-container {
+            width: 300px;
+            height: 300px;
+            background-image: url('{% static "dist/logo/logo.png" %}');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin-bottom: 30px;
+            transition: all 0.5s ease;
+            cursor: pointer;
+        }
+
+        .logo-container:hover {
+            transform: scale(1.05) rotate(5deg);
+            filter: drop-shadow(0 10px 20px rgba(46, 134, 193, 0.4));
+        }
+
+        .system-name {
+            font-size: 32px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #1e3c72, #2E86C1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-top: 30px;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .system-name::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(to right, #1e3c72, #2E86C1);
+            transition: width 0.3s ease;
+        }
+
+        .system-name:hover::after {
+            width: 100px;
+        }
+
+        .login-section {
+            flex: 1;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-header h4 {
+            font-size: 28px;
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .form-control {
+            height: 55px;
+            border-radius: 12px;
+            border: 2px solid rgba(46, 134, 193, 0.2);
+            padding: 0 20px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-control:focus {
+            border-color: #2E86C1;
+            box-shadow: 0 0 20px rgba(46, 134, 193, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .input-group-text {
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(46, 134, 193, 0.2);
+            padding: 0 20px;
+        }
+
+        .btn-login {
+            height: 55px;
+            background: linear-gradient(45deg, #1e3c72, #2E86C1);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-login:hover::before {
+            left: 100%;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(30, 60, 114, 0.3);
+        }
+
+        .forgot-password {
+            color: #2E86C1;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: block;
+            margin-top: 20px;
+            font-size: 15px;
+        }
+
+        .forgot-password:hover {
+            color: #1e3c72;
+            transform: translateY(-2px);
+        }
+
+        .icheck-primary {
+            margin-top: 8px;
+        }
+
+        .alert {
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        @media (max-width: 992px) {
+            .split-container {
+                flex-direction: column;
+                min-height: auto;
+            }
+
+            .logo-section {
+                padding: 40px;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            }
+
+            .logo-container {
+                width: 200px;
+                height: 200px;
+            }
+
+            .login-section {
+                padding: 40px;
+            }
+
+            .system-name {
+                font-size: 28px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .login-page {
+                padding: 20px;
+            }
+
+            .logo-container {
+                width: 150px;
+                height: 150px;
+            }
+
+            .system-name {
+                font-size: 24px;
+            }
+
+            .login-header h4 {
+                font-size: 24px;
+            }
+
+            .form-control, .btn-login {
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+
+<body class="hold-transition login-page">
+    <div class="split-container">
+        <div class="logo-section">
+            <div class="logo-container" id="logo"></div>
+            <div class="system-name">
+                <div>Delta Management</div>
+                <div>System</div>
+            </div>
+        </div>
+
+        <div class="login-section">
+            <div class="login-header">
+                <h4>Welcome Back!</h4>
+                <p>Please login to continue</p>
+            </div>
+            {% if messages %}
+            <div id="login-messages" style="display: none;">
+                {% for message in messages %}
+                <div class="message" data-text="{{ message|escapejs }}"></div>
+                {% endfor %}
+            </div>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const messageElements = document.querySelectorAll('#login-messages .message');
+                    messageElements.forEach(function(element) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Login Failed',
+                            text: element.dataset.text,
+                            confirmButtonColor: '#2E86C1'
+                        });
+                    });
+                });
+            </script>
+            {% endif %}
+            <form action="doLogin/" method="post">
+                {% csrf_token %}
+                <div class="input-group mb-4">
+                    <input required type="email" name='email' class="form-control" placeholder="Email">
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-envelope"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group mb-4">
+                    <input required type="password" name='password' class="form-control" placeholder="Password">
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-lock"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-8">
+                        <div class="icheck-primary">
+                            <input type="checkbox" id="remember">
+                            <label for="remember">
+                                Remember Me
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <button type="submit" class="btn btn-login btn-block">Sign In</button>
+                    </div>
+                </div>
+
+                <a href="{% url 'password_reset' %}" class="forgot-password">Forgot Password?</a>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+    <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'dist/js/adminlte.min.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const logo = document.getElementById('logo');
+            let isAnimating = false;
+            let rotation = 0;
+            
+            logo.addEventListener('click', function() {
+                if (!isAnimating) {
+                    isAnimating = true;
+                    rotation += 360;
+                    
+                    this.style.transform = `scale(1.1) rotate(${rotation}deg)`;
+                    this.style.filter = 'drop-shadow(0 0 30px rgba(46, 134, 193, 0.8))';
+                    
+                    setTimeout(() => {
+                        this.style.transform = `scale(1) rotate(${rotation}deg)`;
+                        this.style.filter = 'drop-shadow(0 10px 20px rgba(46, 134, 193, 0.4))';
+                        isAnimating = false;
+                    }, 1000);
+                }
+            });
+        });
+    </script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>

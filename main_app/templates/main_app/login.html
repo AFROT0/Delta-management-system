@@ -10,37 +10,126 @@
     <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
     <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css" rel="stylesheet">
     <style>
-        .login-page {
+        :root {
+            /* Light theme - Enhanced elegant colors */
+            --primary-color: #4F46E5;
+            --secondary-color: #4338CA;
+            --text-color: #1F2937;
+            --text-muted: #6B7280;
+            --bg-color: #F9FAFB;
+            --login-bg: linear-gradient(135deg, #4F46E5, #2563EB);
+            --login-container-bg: rgba(255, 255, 255, 0.95);
+            --login-text: #1F2937;
+            --login-input-bg: #F9FAFB;
+            --login-input-border: rgba(79, 70, 229, 0.1);
+            --login-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            --btn-primary-bg: linear-gradient(135deg, #4F46E5, #2563EB);
+            --btn-primary-hover: linear-gradient(135deg, #4338CA, #1D4ED8);
+            --icon-color: #4B5563;
+            --primary-color-rgb: 79, 70, 229;
+            --input-shadow: 0 10px 20px rgba(79, 70, 229, 0.1);
+        }
+
+        [data-theme="dark"] {
+            /* Dark theme - Enhanced elegant colors */
+            --primary-color: #818CF8;
+            --secondary-color: #6366F1;
+            --text-color: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --bg-color: #0F172A;
+            --login-bg: linear-gradient(135deg, #0F172A, #1E1B4B);
+            --login-container-bg: rgba(17, 24, 39, 0.85);
+            --login-text: #F9FAFB;
+            --login-input-bg: rgba(15, 23, 42, 0.8);
+            --login-input-border: rgba(99, 102, 241, 0.2);
+            --login-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            --btn-primary-bg: linear-gradient(135deg, #6366F1, #4F46E5);
+            --btn-primary-hover: linear-gradient(135deg, #818CF8, #6366F1);
+            --icon-color: #E5E7EB;
+            --primary-color-rgb: 129, 140, 248;
+            --input-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Icon styles */
+        .fas, .far, .fab, .fa {
+            color: var(--icon-color) !important;
+        }
+
+        [data-theme="dark"] .fas,
+        [data-theme="dark"] .far,
+        [data-theme="dark"] .fab,
+        [data-theme="dark"] .fa {
+            color: var(--icon-color) !important;
+        }
+
+        body {
+            background: var(--login-bg);
+            color: var(--text-color);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
             min-height: 100vh;
-            background: linear-gradient(-45deg, #1e3c72, #2a5298, #2E86C1, #3498db);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0;
-            padding: 40px;
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
             position: relative;
             overflow: hidden;
         }
 
-        /* Added animated background particles */
-        .login-page::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 10%, transparent 10.5%);
-            background-size: 50px 50px;
-            animation: moveParticles 20s linear infinite;
-            opacity: 0.5;
+        /* Add this to ensure dark background */
+        html {
+            background: var(--login-bg);
+            min-height: 100%;
         }
 
-        @keyframes moveParticles {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-50px); }
+        [data-theme="dark"] body,
+        [data-theme="dark"] html {
+            background: linear-gradient(135deg, #0F172A, #1E1B4B);
+        }
+
+        .hold-transition {
+            background: var(--login-bg) !important;
+        }
+
+        [data-theme="dark"] .hold-transition {
+            background: linear-gradient(135deg, #0F172A, #1E1B4B) !important;
+        }
+
+        .login-page {
+            background: var(--login-bg) !important;
+            min-height: 100vh;
+        }
+
+        [data-theme="dark"] .login-page {
+            background: linear-gradient(135deg, #0F172A, #1E1B4B) !important;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, 
+                rgba(99, 102, 241, 0.15) 0%,
+                rgba(99, 102, 241, 0.05) 25%,
+                transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        [data-theme="dark"] body::before {
+            background: radial-gradient(circle at 50% 50%, 
+                rgba(99, 102, 241, 0.1) 0%,
+                rgba(99, 102, 241, 0.05) 25%,
+                transparent 50%);
         }
 
         @keyframes gradientBG {
@@ -50,63 +139,103 @@
         }
 
         .split-container {
-            display: flex;
             width: 1200px;
             max-width: 95%;
-            min-height: 600px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 25px;
+            min-height: 650px;
+            background: var(--login-container-bg);
+            border-radius: 30px;
             overflow: hidden;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
+            display: flex;
+            box-shadow: var(--login-shadow);
+            backdrop-filter: blur(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
+            margin: 2rem auto;
         }
 
-        .split-container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        [data-theme="dark"] .split-container {
+            background: rgba(17, 24, 39, 0.85);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4),
+                        inset 0 0 0 1px rgba(99, 102, 241, 0.1);
         }
 
         .logo-section {
             flex: 1.2;
-            background: rgba(255, 255, 255, 0.98);
             padding: 60px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.1),
+                rgba(255, 255, 255, 0.05)
+            );
             position: relative;
             overflow: hidden;
         }
 
+        [data-theme="dark"] .logo-section {
+            background: linear-gradient(
+                135deg,
+                rgba(99, 102, 241, 0.1),
+                rgba(99, 102, 241, 0.05)
+            );
+        }
+
+        .logo-section::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle at center,
+                rgba(99, 102, 241, 0.2) 0%,
+                rgba(99, 102, 241, 0.1) 25%,
+                transparent 50%);
+            transform: translate(-50%, -50%);
+            animation: pulse 8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
         .logo-container {
-            width: 300px;
-            height: 300px;
-            background-image: url('{% static "dist/logo/logo.png" %}');
+            width: 380px;  /* Increased from 280px */
+            height: 380px; /* Increased from 280px */
+            background-image: url('{% static "dist/img/logo.png" %}');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            margin-bottom: 30px;
-            transition: all 0.5s ease;
-            cursor: pointer;
+            margin-bottom: 40px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.15));
+            position: relative;
+            z-index: 1;
+            animation: float 6s ease-in-out infinite;
         }
 
         .logo-container:hover {
             transform: scale(1.05) rotate(5deg);
-            filter: drop-shadow(0 10px 20px rgba(46, 134, 193, 0.4));
+            filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.2));
         }
 
         .system-name {
-            font-size: 32px;
-            font-weight: bold;
-            background: linear-gradient(45deg, #1e3c72, #2E86C1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 36px;
+            font-weight: 700;
             text-align: center;
-            margin-top: 30px;
+            color: var(--text-color);
+            margin-top: 20px;
             position: relative;
             padding-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            z-index: 1;
         }
 
         .system-name::after {
@@ -115,14 +244,10 @@
             bottom: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 50px;
-            height: 3px;
-            background: linear-gradient(to right, #1e3c72, #2E86C1);
-            transition: width 0.3s ease;
-        }
-
-        .system-name:hover::after {
-            width: 100px;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            border-radius: 2px;
         }
 
         .login-section {
@@ -131,60 +256,76 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            background: var(--login-container-bg);
+            position: relative;
+            overflow: hidden;
         }
 
         .login-header {
             text-align: center;
             margin-bottom: 40px;
+            position: relative;
         }
 
         .login-header h4 {
-            font-size: 28px;
-            color: #1e3c72;
-            margin-bottom: 10px;
-            font-weight: 600;
+            font-size: 32px;
+            color: var(--text-color);
+            margin-bottom: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
         .login-header p {
-            color: #666;
-            font-size: 16px;
+            color: var(--text-muted);
+            font-size: 18px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .form-control-container {
+            position: relative;
+            margin-bottom: 25px;
         }
 
         .form-control {
-            height: 55px;
-            border-radius: 12px;
-            border: 2px solid rgba(46, 134, 193, 0.2);
-            padding: 0 20px;
+            height: 60px;
+            background: var(--login-input-bg);
+            border: 2px solid var(--login-input-border);
+            border-radius: 20px;
+            padding: 0 30px;
             font-size: 16px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.9);
+            color: var(--text-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            font-weight: 500;
         }
 
         .form-control:focus {
-            border-color: #2E86C1;
-            box-shadow: 0 0 20px rgba(46, 134, 193, 0.15);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(var(--primary-color-rgb), 0.1);
             transform: translateY(-2px);
         }
 
-        .input-group-text {
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid rgba(46, 134, 193, 0.2);
-            padding: 0 20px;
+        .form-control::placeholder {
+            color: var(--text-muted);
+            font-weight: 400;
         }
 
         .btn-login {
-            height: 55px;
-            background: linear-gradient(45deg, #1e3c72, #2E86C1);
+            height: 60px;
+            background: var(--btn-primary-bg);
             border: none;
-            border-radius: 12px;
+            border-radius: 20px;
             color: white;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 18px;
             letter-spacing: 1px;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 30px;
             position: relative;
             overflow: hidden;
+            text-transform: uppercase;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
 
         .btn-login::before {
@@ -194,87 +335,138 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: 0.5s;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            animation: shine 1.5s infinite;
         }
 
-        .btn-login:hover::before {
-            left: 100%;
+        @keyframes shine {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: 100%; }
         }
 
         .btn-login:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(30, 60, 114, 0.3);
+            background: var(--btn-primary-hover);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
         }
 
         .forgot-password {
-            color: #2E86C1;
+            color: var(--primary-color);
             text-decoration: none;
-            transition: all 0.3s ease;
+            font-size: 16px;
             text-align: center;
-            display: block;
-            margin-top: 20px;
-            font-size: 15px;
+            margin-top: 25px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: inline-block;
+            position: relative;
+        }
+
+        .forgot-password::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background: var(--primary-color);
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.3s ease;
         }
 
         .forgot-password:hover {
-            color: #1e3c72;
+            color: var(--secondary-color);
             transform: translateY(-2px);
         }
 
-        .icheck-primary {
-            margin-top: 8px;
+        .forgot-password:hover::after {
+            transform: scaleX(1);
+            transform-origin: left;
         }
 
-        .g-recaptcha {
+        /* Enhanced Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: var(--login-container-bg);
+            border: 2px solid var(--primary-color);
             display: flex;
+            align-items: center;
             justify-content: center;
-            margin: 20px 0;
+            cursor: pointer;
+            box-shadow: var(--login-shadow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .theme-toggle:hover {
             transform: scale(1.1);
+            border-color: var(--secondary-color);
+            background: var(--primary-color);
         }
 
-        .alert {
-            border-radius: 12px;
-            padding: 15px 20px;
-            margin-bottom: 25px;
-            border: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        .theme-toggle i {
+            font-size: 28px;
+            color: var(--primary-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        .theme-toggle:hover i {
+            color: #ffffff !important;
+            transform: rotate(360deg);
+        }
+
+        /* Enhanced Responsive Design */
         @media (max-width: 992px) {
             .split-container {
                 flex-direction: column;
                 min-height: auto;
+                margin: 20px;
             }
 
             .logo-section {
-                padding: 40px;
-                border-right: none;
-                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+                padding: 40px 20px;
             }
 
             .logo-container {
-                width: 200px;
-                height: 200px;
-            }
-
-            .login-section {
-                padding: 40px;
+                width: 320px;  /* Increased from 220px */
+                height: 320px; /* Increased from 220px */
             }
 
             .system-name {
                 font-size: 28px;
             }
+
+            .login-section {
+                padding: 40px 30px;
+            }
+
+            .login-header h4 {
+                font-size: 26px;
+            }
+
+            .form-control,
+            .btn-login {
+                height: 54px;
+            }
         }
 
         @media (max-width: 576px) {
-            .login-page {
-                padding: 20px;
-            }
-
             .logo-container {
-                width: 150px;
-                height: 150px;
+                width: 260px;  /* Increased from 180px */
+                height: 260px; /* Increased from 180px */
             }
 
             .system-name {
@@ -282,77 +474,119 @@
             }
 
             .login-header h4 {
-                font-size: 24px;
+                font-size: 22px;
             }
 
-            .form-control, .btn-login {
+            .form-control,
+            .btn-login {
+                height: 50px;
+                font-size: 15px;
+            }
+
+            .theme-toggle {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
                 height: 50px;
             }
+        }
+
+        /* Enhanced animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Enhanced hover effects */
+        .form-control:focus {
+            transform: translateY(-2px) scale(1.01);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-3px) scale(1.02);
+        }
+
+        /* Add subtle particle effect */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            background: transparent;
+        }
+
+        [data-theme="dark"] .particles {
+            background: transparent;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: particleFloat 20s infinite linear;
+        }
+
+        @keyframes particleFloat {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translateY(-100vh) translateX(100px); opacity: 0; }
         }
     </style>
 </head>
 
 <body class="hold-transition login-page">
+    <!-- Theme Toggle Button -->
+    <div class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon moon-icon"></i>
+        <i class="fas fa-sun sun-icon"></i>
+    </div>
+
     <div class="split-container">
         <div class="logo-section">
-            <div class="logo-container" id="logo"></div>
-            <div class="system-name">
-                <div>Delta Management</div>
-                <div>System</div>
-            </div>
+            <div class="logo-container"></div>
+            <div class="system-name">Delta Management System</div>
         </div>
 
         <div class="login-section">
             <div class="login-header">
                 <h4>Welcome Back!</h4>
-                <p>Please sign in to continue to your account</p>
+                <p>Please login to continue</p>
             </div>
-
             {% if messages %}
-            <div class="messages">
+            <div id="login-messages" style="display: none;">
                 {% for message in messages %}
-                {% if message.tags == 'error' %}
-                <div class="alert alert-danger text-center">
-                    {{message}}
-                </div>
-                {% endif %}
+                <div class="message" data-text="{{ message|escapejs }}"></div>
                 {% endfor %}
             </div>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const messageElements = document.querySelectorAll('#login-messages .message');
+                    messageElements.forEach(function(element) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Login Failed',
+                            text: element.dataset.text,
+                            confirmButtonColor: '#2E86C1'
+                        });
+                    });
+                });
+            </script>
             {% endif %}
-
             <form action="doLogin/" method="post">
                 {% csrf_token %}
-                <div class="input-group mb-4">
-                    <input required type="email" name='email' class="form-control" placeholder="Email">
-                    <div class="input-group-append">
-                        <div class="input-group-text">
-                            <span class="fas fa-envelope"></span>
-                        </div>
-                    </div>
+                <div class="form-control-container">
+                    <input required type="email" name="email" class="form-control" placeholder="Email">
                 </div>
-                <div class="input-group mb-4">
-                    <input required type="password" name='password' class="form-control" placeholder="Password">
-                    <div class="input-group-append">
-                        <div class="input-group-text">
-                            <span class="fas fa-lock"></span>
-                        </div>
-                    </div>
-                </div>     
-                           
-                <div class="row">
-                    <div class="col-8">
-                        <div class="icheck-primary">
-                            <input type="checkbox" id="remember">
-                            <label for="remember">
-                                Remember Me
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <button type="submit" class="btn btn-login btn-block">Sign In</button>
-                    </div>
+                <div class="form-control-container">
+                    <input required type="password" name="password" class="form-control" placeholder="Password">
                 </div>
-
+                <button type="submit" class="btn btn-login btn-block">Sign In</button>
                 <a href="{% url 'password_reset' %}" class="forgot-password">Forgot Password?</a>
             </form>
         </div>
@@ -361,28 +595,89 @@
     <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
     <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'dist/js/adminlte.min.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Theme toggle functionality
         document.addEventListener('DOMContentLoaded', function() {
-            const logo = document.getElementById('logo');
-            let isAnimating = false;
-            let rotation = 0;
+            const themeToggle = document.getElementById('themeToggle');
             
-            logo.addEventListener('click', function() {
-                if (!isAnimating) {
-                    isAnimating = true;
-                    rotation += 360;
-                    
-                    this.style.transform = `scale(1.1) rotate(${rotation}deg)`;
-                    this.style.filter = 'drop-shadow(0 0 30px rgba(46, 134, 193, 0.8))';
-                    
-                    setTimeout(() => {
-                        this.style.transform = `scale(1) rotate(${rotation}deg)`;
-                        this.style.filter = 'drop-shadow(0 10px 20px rgba(46, 134, 193, 0.4))';
-                        isAnimating = false;
-                    }, 1000);
+            // Check for saved theme preference or system preference
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const currentTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+            
+            // Apply theme immediately
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            document.body.style.background = getComputedStyle(document.documentElement).getPropertyValue('--login-bg');
+            
+            // Update theme toggle button state
+            updateThemeToggleState(currentTheme);
+            
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                
+                document.documentElement.setAttribute('data-theme', newTheme);
+                document.body.style.background = getComputedStyle(document.documentElement).getPropertyValue('--login-bg');
+                localStorage.setItem('theme', newTheme);
+                
+                // Update theme toggle button state
+                updateThemeToggleState(newTheme);
+                
+                // Add animation to toggle button
+                this.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 100);
+            });
+
+            // Function to update theme toggle button state
+            function updateThemeToggleState(theme) {
+                const moonIcon = themeToggle.querySelector('.moon-icon');
+                const sunIcon = themeToggle.querySelector('.sun-icon');
+                
+                if (theme === 'dark') {
+                    moonIcon.style.opacity = '0';
+                    moonIcon.style.transform = 'rotate(90deg) scale(0.5)';
+                    sunIcon.style.opacity = '1';
+                    sunIcon.style.transform = 'rotate(0) scale(1)';
+                } else {
+                    moonIcon.style.opacity = '1';
+                    moonIcon.style.transform = 'rotate(0) scale(1)';
+                    sunIcon.style.opacity = '0';
+                    sunIcon.style.transform = 'rotate(-90deg) scale(0.5)';
+                }
+            }
+
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (!localStorage.getItem('theme')) {
+                    const newTheme = e.matches ? 'dark' : 'light';
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    document.body.style.background = getComputedStyle(document.documentElement).getPropertyValue('--login-bg');
+                    updateThemeToggleState(newTheme);
                 }
             });
+
+            // Add particles
+            createParticles();
         });
+
+        // Add particles with JavaScript
+        function createParticles() {
+            const particlesContainer = document.createElement('div');
+            particlesContainer.className = 'particles';
+            document.body.appendChild(particlesContainer);
+
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.opacity = Math.random() * 0.5;
+                particlesContainer.appendChild(particle);
+            }
+        }
     </script>
 </body>
 </html>

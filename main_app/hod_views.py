@@ -1,22 +1,37 @@
+# Standard library imports
 import json
+import logging
+import random
+import string
+from datetime import datetime
+from io import BytesIO
+import os
+
+# Third-party imports
 import requests
 from django.contrib import messages
+from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import (HttpResponse, HttpResponseRedirect,
-                              get_object_or_404, redirect, render)
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import UpdateView
-
-from .forms import *
-from .models import *
-import barcode
-from barcode.writer import ImageWriter
-from django.core.files.base import ContentFile
 from django.db import transaction
-from io import BytesIO
+try:
+   import qrcode
+except ImportError:
+    qrcode = None
+
+# Local application imports
+from .forms import *
+from .models import (
+    Admin, Attendance, AttendanceReport, Course, CustomUser,
+    FeedbackStaff, FeedbackStudent, LeaveReportStaff,
+    LeaveReportStudent, NotificationStaff, NotificationStudent,
+    Session, Staff, Student, StudentResult, Subject
+)
 
 
 def admin_home(request):
@@ -25,28 +40,25 @@ def admin_home(request):
     subjects = Subject.objects.all()
     total_subject = subjects.count()
     total_course = Course.objects.all().count()
-    attendance_list = Attendance.objects.filter(subject__in=subjects)
-    total_attendance = attendance_list.count()
-    attendance_list = []
+    
+    # Attendance per subject
     subject_list = []
+    attendance_list = []
     for subject in subjects:
         attendance_count = Attendance.objects.filter(subject=subject).count()
         subject_list.append(subject.name[:7])
         attendance_list.append(attendance_count)
 
-    # Total Subjects and students in Each Course
+    # Students per course
     course_all = Course.objects.all()
     course_name_list = []
-    subject_count_list = []
     student_count_list_in_course = []
-
     for course in course_all:
-        subjects = Subject.objects.filter(course_id=course.id).count()
         students = Student.objects.filter(course_id=course.id).count()
         course_name_list.append(course.name)
-        subject_count_list.append(subjects)
         student_count_list_in_course.append(students)
     
+    # Students per subject
     subject_all = Subject.objects.all()
     subject_list = []
     student_count_list_in_subject = []
@@ -56,21 +68,18 @@ def admin_home(request):
         subject_list.append(subject.name)
         student_count_list_in_subject.append(student_count)
 
-
-    # For Students
-    student_attendance_present_list=[]
-    student_attendance_leave_list=[]
-    student_name_list=[]
-
+    # Student attendance statistics
+    student_attendance_present_list = []
+    student_attendance_leave_list = []
+    student_name_list = []
     students = Student.objects.all()
     for student in students:
-        
         attendance = AttendanceReport.objects.filter(student_id=student.id, status=True).count()
         absent = AttendanceReport.objects.filter(student_id=student.id, status=False).count()
         leave = LeaveReportStudent.objects.filter(student_id=student.id, status=1).count()
         student_attendance_present_list.append(attendance)
-        student_attendance_leave_list.append(leave+absent)
-        student_name_list.append(student.admin.first_name)
+        student_attendance_leave_list.append(leave + absent)
+        student_name_list.append(f"{student.admin.first_name} {student.admin.last_name}")
 
     context = {
         'page_title': "Administrative Dashboard",
@@ -82,11 +91,10 @@ def admin_home(request):
         'attendance_list': attendance_list,
         'student_attendance_present_list': student_attendance_present_list,
         'student_attendance_leave_list': student_attendance_leave_list,
-        "student_name_list": student_name_list,
-        "student_count_list_in_subject": student_count_list_in_subject,
-        "student_count_list_in_course": student_count_list_in_course,
-        "course_name_list": course_name_list,
-
+        'student_name_list': student_name_list,
+        'student_count_list_in_subject': student_count_list_in_subject,
+        'student_count_list_in_course': student_count_list_in_course,
+        'course_name_list': course_name_list,
     }
     return render(request, 'hod_template/home_content.html', context)
 
@@ -104,63 +112,174 @@ def add_staff(request):
             password = form.cleaned_data.get('password')
             course = form.cleaned_data.get('course')
             passport = request.FILES.get('profile_pic')
-            fs = FileSystemStorage()
-            filename = fs.save(passport.name, passport)
-            passport_url = fs.url(filename)
+            
             try:
                 user = CustomUser.objects.create_user(
-                    email=email, password=password, user_type=2, first_name=first_name, last_name=last_name, profile_pic=passport_url)
+                    email=email, password=password, user_type=2, first_name=first_name, last_name=last_name)
                 user.gender = gender
                 user.address = address
                 user.staff.course = course
+                
+                if passport:
+                    fs = FileSystemStorage()
+                    filename = fs.save(passport.name, passport)
+                    passport_url = fs.url(filename)
+                    user.profile_pic = passport_url
+                
                 user.save()
-                messages.success(request, "Successfully Added")
+                messages.success(request, "Staff added successfully!")
                 return redirect(reverse('add_staff'))
-
             except Exception as e:
-                messages.error(request, "Could Not Add " + str(e))
+                messages.error(request, f"Could not add staff: {str(e)}")
         else:
-            messages.error(request, "Please fulfil all requirements")
+            messages.error(request, "Please fill all required fields")
 
     return render(request, 'hod_template/add_staff_template.html', context)
 
 
 def add_student(request):
-    student_form = StudentForm(request.POST or None, request.FILES or None)
-    context = {'form': student_form, 'page_title': 'Add Student'}
     if request.method == 'POST':
-        if student_form.is_valid():
-            first_name = student_form.cleaned_data.get('first_name')
-            last_name = student_form.cleaned_data.get('last_name')
-            address = student_form.cleaned_data.get('address')
-            email = student_form.cleaned_data.get('email')
-            gender = student_form.cleaned_data.get('gender')
-            password = student_form.cleaned_data.get('password')
-            course = student_form.cleaned_data.get('course')
-            session = student_form.cleaned_data.get('session')
-            passport = request.FILES['profile_pic']
-            fs = FileSystemStorage()
-            filename = fs.save(passport.name, passport)
-            passport_url = fs.url(filename)
+        form = StudentForm(request.POST, request.FILES)
+        if form.is_valid():
             try:
+                first_name = form.cleaned_data.get('first_name')
+                last_name = form.cleaned_data.get('last_name')
+                address = form.cleaned_data.get('address')
+                email = form.cleaned_data.get('email')
+                password = form.cleaned_data.get('password')
+                course = form.cleaned_data.get('course')
+                gender = form.cleaned_data.get('gender')
+                session = form.cleaned_data.get('session')
+                
+                # Generate a unique student code
+                student_code = generate_unique_student_code()
+                
+                # Create user first
                 user = CustomUser.objects.create_user(
-                    email=email, password=password, user_type=3, first_name=first_name, last_name=last_name, profile_pic=passport_url)
+                    email=email, password=password, user_type=3,
+                    first_name=first_name, last_name=last_name)
                 user.gender = gender
                 user.address = address
-                user.student.session = session
                 user.student.course = course
-                code = barcode.get('code128', str(user.id), writer=ImageWriter())
-                buffer = BytesIO()
-                code.write(buffer)
-                user.barcode.save(f'barcode_{user.id}.png', ContentFile(buffer.getvalue()), save=False)
+                user.student.session = session
+                user.student_code = student_code
+                
+                # Handle profile picture if provided
+                if 'profile_pic' in request.FILES:
+                    profile_pic = request.FILES['profile_pic']
+                    fs = FileSystemStorage()
+                    filename = fs.save(profile_pic.name, profile_pic)
+                    user.profile_pic = fs.url(filename)
+                
+                # Save user to get the ID
                 user.save()
-                messages.success(request, "Successfully Added")
-                return redirect(reverse('add_student'))
+                
+                # Instead of creating a new Student, get the one created by the signal
+                student = Student.objects.get(admin=user)
+                student.course = course
+                student.session = session
+                student.save()
+                
+                try:
+                    # Generate QR code with student data
+                    student_data = {
+                        'student_code': student_code,
+                        'name': f"{first_name} {last_name}",
+                        'email': email
+                    }
+                    
+                    if qrcode is not None:
+                        print("Starting QR code generation...")  # Debug log
+                        # Create QR code
+                        qr = qrcode.QRCode(
+                            version=1,
+                            error_correction=qrcode.constants.ERROR_CORRECT_L,
+                            box_size=10,
+                            border=4,
+                        )
+                        qr.add_data(json.dumps(student_data))
+                        qr.make(fit=True)
+                        qr_image = qr.make_image(fill_color="black", back_color="white")
+                        
+                        # Save QR code
+                        buffer = BytesIO()
+                        qr_image.save(buffer, format='PNG')
+                        buffer.seek(0)
+                        
+                        # Create a unique filename for the QR code
+                        filename = f'qr_code_{student_code}.png'
+                        file_path = os.path.join('qr_codes', filename)
+                        print(f"Saving QR code to path: {file_path}")  # Debug log
+                        
+                        # Use FileSystemStorage to save the file
+                        fs = FileSystemStorage()
+                        saved_path = fs.save(file_path, ContentFile(buffer.getvalue()))
+                        print(f"QR code saved successfully at: {saved_path}")  # Debug log
+                        
+                        # Update user's qr_code field with the saved file path
+                        user.qr_code = saved_path
+                        user.save()
+                        print(f"User QR code path updated: {user.qr_code.url}")  # Debug log
+                        
+                        messages.success(request, f"QR code generated and saved successfully")
+                    else:
+                        messages.warning(request, "QR code generation is not available. Please install qrcode package.")
+                        print("QR code generation failed: qrcode module not available")  # Debug log
+                except Exception as qr_error:
+                    messages.warning(request, f"Could not generate QR code: {str(qr_error)}")
+                    print(f"QR code generation error: {str(qr_error)}")  # Debug log
+                
+                # Check if request is AJAX
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': f'Student {first_name} {last_name} added successfully!'
+                    })
+                else:
+                    messages.success(request, "Successfully Added Student")
+                    return redirect(reverse('add_student'))
+                    
             except Exception as e:
-                messages.error(request, "Could Not Add: " + str(e))
+                # Check if request is AJAX
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f'Could not add student: {str(e)}'
+                    }, status=400)
+                else:
+                    messages.error(request, f"Could Not Add: {str(e)}")
         else:
-            messages.error(request, "Could Not Add: ")
+            # Check if request is AJAX
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                errors = dict(form.errors.items())
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Please correct the errors below.',
+                    'errors': errors
+                }, status=400)
+            else:
+                messages.error(request, "Please Fill All Required Fields!")
+    else:
+        form = StudentForm()
+    
+    context = {
+        'form': form,
+        'page_title': 'Add Student'
+    }
     return render(request, 'hod_template/add_student_template.html', context)
+
+def generate_unique_student_code():
+    import random
+    import string
+    
+    while True:
+        # Generate a 6-character code with only letters and numbers
+        characters = string.ascii_letters + string.digits
+        code = ''.join(random.choice(characters) for _ in range(6))
+        
+        # Check if code already exists
+        if not CustomUser.objects.filter(student_code=code).exists():
+            return code
 
 
 def add_course(request):
@@ -187,6 +306,7 @@ def add_course(request):
         else:
             messages.error(request, "Could Not Add: Form is invalid")
     return render(request, 'hod_template/add_course_template.html', context)
+
 
 
 def add_subject(request):
@@ -219,6 +339,7 @@ def add_subject(request):
             messages.error(request, "Please fill all required fields correctly")
 
     return render(request, 'hod_template/add_subject_template.html', context)
+
 
 def manage_staff(request):
     allStaff = CustomUser.objects.filter(user_type=2)
@@ -442,7 +563,6 @@ def add_session(request):
     
     return render(request, "hod_template/add_session_template.html", context)
 
-
 def manage_session(request):
     sessions = Session.objects.all()
     context = {'sessions': sessions, 'page_title': 'Manage Sessions'}
@@ -474,14 +594,29 @@ def edit_session(request, session_id):
 
 @csrf_exempt
 def check_email_availability(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+    
     email = request.POST.get("email")
+    if not email:
+        return JsonResponse({'error': 'Email is required'}, status=400)
+    
     try:
-        user = CustomUser.objects.filter(email=email).exists()
-        if user:
-            return HttpResponse(True)
-        return HttpResponse(False)
+        # Check if email exists in CustomUser model
+        exists = CustomUser.objects.filter(email=email).exists()
+        if exists:
+            return JsonResponse({
+                'is_taken': True,
+                'error_message': 'This email is already registered.'
+            })
+        return JsonResponse({
+            'is_taken': False,
+            'success_message': 'Email is available.'
+        })
     except Exception as e:
-        return HttpResponse(False)
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
 
 
 @csrf_exempt
@@ -610,6 +745,77 @@ def get_admin_attendance(request):
         return JsonResponse(json.dumps(json_data), safe=False)
     except Exception as e:
         return None
+
+
+@csrf_exempt
+def save_attendance_data(request):
+    if request.method == 'POST':
+        subject_id = request.POST.get('subject_id')
+        session_id = request.POST.get('session_id')
+        attendance_date = request.POST.get('attendance_date')
+        student_ids = request.POST.getlist('student_ids[]')
+
+        logging.info(f"Subject ID: {subject_id}")
+        logging.info(f"Session ID: {session_id}")
+        logging.info(f"Attendance Date: {attendance_date}")
+        logging.info(f"Student IDs: {student_ids}")
+
+        try:
+            subject = get_object_or_404(Subject, id=subject_id)
+            session = get_object_or_404(Session, id=session_id)
+
+            # Convert attendance_date to a date object
+            attendance_date_obj = datetime.strptime(attendance_date, '%Y-%m-%d').date()
+
+            # Validate that the attendance date's year is within the session's academic years
+            attendance_year = attendance_date_obj.year
+            session_start_year = session.start_year.year if isinstance(session.start_year, datetime) else session.start_year
+            session_end_year = session.end_year.year if isinstance(session.end_year, datetime) else session.end_year
+            
+            if not (session_start_year <= attendance_year <= session_end_year):
+                return JsonResponse({
+                    "status": "error",
+                    "message": f"Attendance year {attendance_year} must be between academic session years "
+                              f"{session_start_year} and {session_end_year}"
+                })
+
+            # Validate that the attendance date is precisely within the session date range
+            if attendance_date_obj < session.start_year.date() or attendance_date_obj > session.end_year.date():
+                return JsonResponse({
+                    "status": "error",
+                    "message": f"Attendance date ({attendance_date_obj.strftime('%Y-%m-%d')}) is outside the session period ({session.start_year.date().strftime('%Y-%m-%d')} - {session.end_year.date().strftime('%Y-%m-%d')})"
+                })
+
+            # Check if attendance already exists for the given date and student
+            for student_id in student_ids:
+                student = get_object_or_404(Student, id=student_id)
+                if AttendanceReport.objects.filter(student=student, attendance__date=attendance_date_obj).exists():
+                    return JsonResponse({"status": "error", "message": f"Attendance already recorded for student {student.admin.first_name} {student.admin.last_name} on {attendance_date}"})
+
+            attendance = Attendance.objects.create(subject=subject, session=session, date=attendance_date_obj)
+
+            # Check if attendance already exists for the given date and student
+            for student_id in student_ids:
+                student = get_object_or_404(Student, id=student_id)
+                if AttendanceReport.objects.filter(student=student, attendance__date=attendance_date_obj).exists():
+                    return JsonResponse({"status": "error", "message": f"Attendance already recorded for student {student.admin.first_name} {student.admin.last_name} on {attendance_date}"})
+                try:
+                    student = get_object_or_404(Student, id=student_id)
+                    status = request.POST.get(f'status_{student_id}', 'False') == 'True'
+                    AttendanceReport.objects.create(student=student, attendance=attendance, status=status)
+                except Exception as e:
+                    logging.error(f"Error processing student ID {student_id}: {str(e)}")
+                    messages.error(request, f"Error processing student ID {student_id}: {str(e)}")
+                    return JsonResponse({"status": "error", "message": f"Error processing student ID {student_id}: {str(e)}"})
+
+            messages.success(request, "Attendance saved successfully!")
+            return JsonResponse({"status": "success"})
+        except Exception as e:
+            logging.error(f"Error in saving attendance: {str(e)}")
+            messages.error(request, f"Error in saving attendance: {str(e)}")
+            return JsonResponse({"status": "error", "message": str(e)})
+
+    return JsonResponse({"status": "error", "message": "Invalid request method"})
 
 
 def admin_view_profile(request):
@@ -764,7 +970,6 @@ def delete_staff(request, staff_id):
         
     return redirect(reverse('manage_staff'))
 
-
 def delete_student(request, student_id):
     """
     Delete a student and all their related records after checking dependencies.
@@ -792,7 +997,6 @@ def delete_student(request, student_id):
         
     return redirect(reverse('manage_student'))
 
-
 def delete_course(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     try:
@@ -813,10 +1017,9 @@ def delete_subject(request, subject_id):
 
 def delete_session(request, session_id):
     session = get_object_or_404(Session, id=session_id)
-    try:
+    if Student.objects.filter(session=session).exists():
+        messages.error(request, "There are students assigned to this session. Please move them to another session.")
+    else:
         session.delete()
         messages.success(request, "Session deleted successfully!")
-    except Exception:
-        messages.error(
-            request, "There are students assigned to this session. Please move them to another session.")
     return redirect(reverse('manage_session'))

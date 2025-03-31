@@ -1,0 +1,113 @@
+{% if request.user.is_authenticated %}
+    {% if request.user.user_type == '1' %}
+        {% extends 'admin_template/base_template.html' %}
+    {% elif request.user.user_type == '2' %}
+        {% extends 'staff_template/base_template.html' %}
+    {% else %}
+        {% extends 'student_template/base_template.html' %}
+    {% endif %}
+{% else %}
+    {% extends 'main_app/base.html' %}
+{% endif %}
+
+{% block content %}
+{% if request.user.is_authenticated %}
+    {% if request.user.user_type == '1' %}
+        {% include 'main_app/admin_menu.html' %}
+    {% elif request.user.user_type == '2' %}
+        {% include 'main_app/staff_menu.html' %}
+    {% else %}
+        {% include 'main_app/student_menu.html' %}
+    {% endif %}
+{% endif %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ page_title }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Hero Section -->
+                        <div class="text-center mb-5">
+                            <h1 class="display-4">Welcome to Delta Management System</h1>
+                            <p class="lead">A comprehensive solution for educational institutions</p>
+                        </div>
+
+                        <!-- Features Grid -->
+                        <div class="row">
+                            {% for feature in features %}
+                            <div class="col-md-4 mb-4">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <i class="fas {{ feature.icon }} fa-3x mb-3 text-primary"></i>
+                                        <h4 class="card-title">{{ feature.title }}</h4>
+                                        <p class="card-text">{{ feature.description }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Additional Information -->
+                        <div class="row mt-5">
+                            <div class="col-md-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h3 class="card-title">Why Choose Delta Management System?</h3>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li class="mb-3">
+                                                        <i class="fas fa-check-circle text-success mr-2"></i>
+                                                        <strong>Efficiency:</strong> Streamline your administrative tasks with automated processes
+                                                    </li>
+                                                    <li class="mb-3">
+                                                        <i class="fas fa-check-circle text-success mr-2"></i>
+                                                        <strong>Accuracy:</strong> Minimize human errors with digital record-keeping
+                                                    </li>
+                                                    <li class="mb-3">
+                                                        <i class="fas fa-check-circle text-success mr-2"></i>
+                                                        <strong>Accessibility:</strong> Access information anytime, anywhere
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li class="mb-3">
+                                                        <i class="fas fa-check-circle text-success mr-2"></i>
+                                                        <strong>Integration:</strong> Seamless integration of all educational processes
+                                                    </li>
+                                                    <li class="mb-3">
+                                                        <i class="fas fa-check-circle text-success mr-2"></i>
+                                                        <strong>Support:</strong> Dedicated support team for assistance
+                                                    </li>
+                                                    <li class="mb-3">
+                                                        <i class="fas fa-check-circle text-success mr-2"></i>
+                                                        <strong>Scalability:</strong> Grow with your institution's needs
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Section -->
+                        <div class="row mt-5">
+                            <div class="col-md-12 text-center">
+                                <h3>Need Help?</h3>
+                                <p>Our support team is here to assist you with any questions or concerns.</p>
+                                <a href="#" class="btn btn-primary">Contact Support</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %} 

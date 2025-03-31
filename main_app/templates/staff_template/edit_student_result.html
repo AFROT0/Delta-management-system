@@ -2,7 +2,36 @@
 {% load static %}
 {% block page_title %}{{page_title}}{% endblock page_title %}
 {% block content %}
+<style>
+    /* Bigger dropdown labels */
+    .form-group label {
+        font-size: 1.0em !important;
+        font-weight: 500 !important;
+        margin-bottom: 10px !important;
+    }
 
+    /* Adjust select size to match */
+    .form-group select.form-control {
+        height: 48px !important;
+        padding: 10px 15px !important;
+        font-size: 1.0em !important;
+    }
+
+    /* Test and Exam input labels */
+    label[for="id_test"], 
+    label[for="id_exam"] {
+        font-size: 1.0em !important;
+        font-weight: 500 !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* Make input fields match the larger size */
+    .form-control {
+        height: 48px !important;
+        font-size: 1.0em !important;
+        padding: 10px 15px !important;
+    }
+</style>
 <section class="content">
     <div class="container-fluid">
         <div class="row">

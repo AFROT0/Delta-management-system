@@ -4,9 +4,7 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
-
-
+from django.core.exceptions import ValidationError
 
 class CustomUserManager(UserManager):
     def _create_user(self, email, password, **extra_fields):
@@ -46,18 +44,19 @@ class Session(models.Model):
 
 
 class CustomUser(AbstractUser):
-    USER_TYPE = ((1, "HOD"), (2, "Staff"), (3, "Student"))
+    user_type_data = ((1, "HOD"), (2, "Staff"), (3, "Student"))
     GENDER = [("M", "Male"), ("F", "Female")]
-    
     
     username = None  # Removed username, using email instead
     email = models.EmailField(unique=True)
-    user_type = models.CharField(default=1, choices=USER_TYPE, max_length=1)
-    barcode = models.ImageField(upload_to='barcodes/', blank=True, null=True) # only for students
-    gender = models.CharField(max_length=1, choices=GENDER)
-    profile_pic = models.ImageField()
+    user_type = models.CharField(default=1, choices=user_type_data, max_length=10)
+    qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
+    gender = models.CharField(max_length=255)
+    profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
     address = models.TextField()
+    student_code = models.CharField(max_length=6, unique=True, blank=True, null=True, help_text="Unique 6-character code containing letters, numbers, and special characters")
     fcm_token = models.TextField(default="")  # For firebase notifications
+    nfc_id = models.CharField(max_length=50, unique=True, blank=True, null=True, help_text="NFC ID from the student/staff card")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     USERNAME_FIELD = "email"
@@ -70,7 +69,6 @@ class CustomUser(AbstractUser):
 
 class Admin(models.Model):
     admin = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
-
 
 
 class Course(models.Model):
@@ -101,7 +99,7 @@ class Staff(models.Model):
 
 class Subject(models.Model):
     name = models.CharField(max_length=120)
-    staff = models.ForeignKey(Staff,on_delete=models.CASCADE,)
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -124,6 +122,14 @@ class AttendanceReport(models.Model):
     status = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if AttendanceReport.objects.filter(student=self.student, attendance=self.attendance).exclude(pk=self.pk).exists():
+            raise ValidationError('A student cannot be marked as both present and absent for the same attendance.')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
 
 class LeaveReportStudent(models.Model):
@@ -181,6 +187,22 @@ class StudentResult(models.Model):
     exam = models.FloatField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class NFCAttendance(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    date = models.DateField()
+    time = models.TimeField()
+    status = models.BooleanField(default=True)  # True for successful attendance
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['user', 'subject', 'date']
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.subject.name} - {self.date}"
 
 
 @receiver(post_save, sender=CustomUser)

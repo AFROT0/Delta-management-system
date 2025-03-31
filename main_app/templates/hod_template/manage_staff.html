@@ -3,6 +3,22 @@
 {% block page_title %}{{page_title}}{% endblock page_title %}
 
 {% block content %}
+<style>
+    /* Table styles */
+    .table {
+        width: 100%;
+        margin-bottom: 1rem;
+        table-layout: fixed;
+    }
+    /* Fixed column widths */
+    .table th:nth-child(1) { width: 5%; }
+    .table th:nth-child(2) { width: 20%; }
+    .table th:nth-child(3) { width: 20%; }
+    .table th:nth-child(4) { width: 10%; }
+    .table th:nth-child(5) { width: 15%; }
+    .table th:nth-child(6) { width: 15%; }
+    .table th:nth-child(7) { width: 15%; }
+</style>
 
 <section class="content">
     <div class="container-fluid">
@@ -14,7 +30,7 @@
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body">
-                        <table id="example2" class="table table-bordered table-hover">
+                        <table class="table table-bordered">
                             <thead class="thead-dark">
                                 <tr>
                                     <th>#</th>

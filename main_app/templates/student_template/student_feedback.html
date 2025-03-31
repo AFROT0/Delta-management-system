@@ -1,8 +1,14 @@
 {% extends 'main_app/base.html' %}
 {% load static %}
 {% block page_title %}{{page_title}}{% endblock page_title %}
-
 {% block content %}
+<style>
+    /* Card header text style */
+    .card-dark .card-header .card-title {
+        color:rgb(255, 255, 255) !important;
+        font-weight: 500;
+    }
+</style>
 
 <section class="content">
     <div class="container-fluid">

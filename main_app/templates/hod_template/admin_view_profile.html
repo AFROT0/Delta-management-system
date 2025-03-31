@@ -2,8 +2,20 @@
 {% load static %}
 {% block page_title %}{{page_title}}{% endblock page_title %}
 
-{% block content %}
+{% block custom_css %}
+<style>
+    select.form-control {
+        height: auto !important;
+        padding: 8px 12px;
+        font-size: 1.1em;
+    }
+    .form-control {
+        min-height: 45px;
+    }
+</style>
+{% endblock custom_css %}
 
+{% block content %}
 <section class="content">
     <div class="container-fluid">
         <div class="row">

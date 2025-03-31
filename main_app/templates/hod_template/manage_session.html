@@ -3,6 +3,19 @@
 {% block page_title %}{{page_title}}{% endblock page_title %}
 
 {% block content %}
+<style>
+    /* Table styles */
+    .table {
+        width: 100%;
+        margin-bottom: 1rem;
+        table-layout: fixed;
+    }
+    /* Fixed column widths */
+    .table th:nth-child(1) { width: 10%; }
+    .table th:nth-child(2) { width: 30%; }
+    .table th:nth-child(3) { width: 30%; }
+    .table th:nth-child(4) { width: 30%; }
+</style>
 
 <section class="content">
     <div class="container-fluid">
@@ -12,10 +25,9 @@
                     <div class="card-header">
                         <h3 class="card-title">{{page_title}}</h3>
                     </div>
-                    <!-- /.card-header -->
                     <div class="card-body">
-                        <table id="example2" class="table table-bordered table-hover">
-                            <thead class="thead-dark">
+                        <table class="table table-bordered">
+                            <thead>
                                 <tr>
                                     <th>#</th>
                                     <th>Start</th>
