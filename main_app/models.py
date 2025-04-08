@@ -56,7 +56,6 @@ class CustomUser(AbstractUser):
     address = models.TextField()
     student_code = models.CharField(max_length=6, unique=True, blank=True, null=True, help_text="Unique 6-character code containing letters, numbers, and special characters")
     fcm_token = models.TextField(default="")  # For firebase notifications
-    nfc_id = models.CharField(max_length=50, unique=True, blank=True, null=True, help_text="NFC ID from the student/staff card")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     USERNAME_FIELD = "email"
@@ -187,22 +186,6 @@ class StudentResult(models.Model):
     exam = models.FloatField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-
-class NFCAttendance(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    date = models.DateField()
-    time = models.TimeField()
-    status = models.BooleanField(default=True)  # True for successful attendance
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ['user', 'subject', 'date']
-
-    def __str__(self):
-        return f"{self.user.get_full_name()} - {self.subject.name} - {self.date}"
 
 
 @receiver(post_save, sender=CustomUser)

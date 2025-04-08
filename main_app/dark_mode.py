@@ -1,5 +1,4 @@
 from django import template
-
 register = template.Library()
 
 @register.inclusion_tag('main_app/dark_mode_toggle.html')

@@ -10,9 +10,9 @@
                 <!-- small box -->
                 <div class="small-box bg-info">
                     <div class="inner">
-                        <h3>{{total_students}}</h3>
+                        <h3 class="text-mode">{{total_students}}</h3>
 
-                        <p>Total Students</p>
+                        <p class="text-mode">Total Students</p>
                     </div>
                     <div class="icon">
                       <i class="nav-icon fas fa-user-graduate"></i>
@@ -26,9 +26,9 @@
                 <!-- small box -->
                 <div class="small-box bg-success">
                     <div class="inner">
-                        <h3>{{total_staff}}</h3>
+                        <h3 class="text-mode">{{total_staff}}</h3>
 
-                        <p>Total Staff</p>
+                        <p class="text-mode">Total Staff</p>
                     </div>
                     <div class="icon">
                       <i class="nav-icon fas fa-users"></i>
@@ -41,9 +41,9 @@
                 <!-- small box -->
                 <div class="small-box bg-purple">
                     <div class="inner">
-                        <h3>{{total_course}}</h3>
+                        <h3 class="text-mode">{{total_course}}</h3>
 
-                        <p>Total Course</p>
+                        <p class="text-mode">Total Course</p>
                     </div>
                     <div class="icon">
                       <i class="nav-icon fas fa-th-list"></i>
@@ -56,9 +56,9 @@
                 <!-- small box -->
                 <div class="small-box bg-danger">
                     <div class="inner">
-                        <h3>{{total_subject}}</h3>
+                        <h3 class="text-mode">{{total_subject}}</h3>
 
-                        <p>Total Subjects</p>
+                        <p class="text-mode">Total Subjects</p>
                     </div>
                     <div class="icon">
                       <i class="nav-icon fas fa-book"></i>
@@ -75,7 +75,7 @@
                 <!-- LINE CHART -->
                 <div class="card card-dark">
                   <div class="card-header">
-                    <h3 class="card-title">Staffs - Students Overview</h3>
+                    <h3 class="card-title text-white">Staffs - Students Overview</h3>
     
                     <div class="card-tools">
                       <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
@@ -93,7 +93,7 @@
                 <div class="col-md-6">
                     <div class="card card-dark">
               <div class="card-header">
-                <h3 class="card-title">Attendance Per Subject</h3>
+                <h3 class="card-title text-white">Attendance Per Subject</h3>
 
                 <div class="card-tools">
                   <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i>
@@ -182,11 +182,53 @@
         </div>
     </div><!-- /.container-fluid -->
 </section>
+
+<style>
+    /* Add mode-specific text colors */
+    @media (prefers-color-scheme: dark) {
+        .text-mode {
+            color: white !important;
+        }
+        .chart-text-color {
+            color: white !important;
+        }
+        .card-body {
+            color: white !important;
+        }
+    }
+    
+    @media (prefers-color-scheme: light) {
+        .text-mode {
+            color: black !important;
+        }
+        .chart-text-color {
+            color: black !important;
+        }
+        .card-body {
+            color: black !important;
+        }
+    }
+    
+    /* Additional utility class for the small box footers */
+    .small-box-footer {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+    .small-box-footer:hover {
+        color: white !important;
+    }
+</style>
 {% endblock content %}
 
 {% block custom_js %}
 <script>
 $(document).ready(function(){
+    // Detect dark mode
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Set text colors based on mode
+    const textColor = isDarkMode ? 'white' : 'black';
+    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    
     // Staff-Students Overview Chart
     var staffStudentData = {
         labels: ['Students', 'Staff'],
@@ -206,7 +248,7 @@ $(document).ready(function(){
             maintainAspectRatio: false,
             tooltips: {
                 backgroundColor: "rgb(255,255,255)",
-                bodyFontColor: "#858796",
+                bodyFontColor: "#000000",
                 borderColor: '#dddfeb',
                 borderWidth: 1,
                 xPadding: 15,
@@ -216,7 +258,10 @@ $(document).ready(function(){
             },
             legend: {
                 display: true,
-                position: 'bottom'
+                position: 'bottom',
+                labels: {
+                    fontColor: '#000000'
+                }
             },
             cutoutPercentage: 80
         }
@@ -244,7 +289,7 @@ $(document).ready(function(){
                 yAxes: [{
                     ticks: {
                         beginAtZero: true,
-                        fontColor: '#2d2d2d'
+                        fontColor: '#000000'
                     },
                     gridLines: {
                         color: "rgba(0, 0, 0, 0.1)"
@@ -252,7 +297,7 @@ $(document).ready(function(){
                 }],
                 xAxes: [{
                     ticks: {
-                        fontColor: '#2d2d2d'
+                        fontColor: '#000000'
                     },
                     gridLines: {
                         color: "rgba(0, 0, 0, 0.1)"
@@ -263,7 +308,7 @@ $(document).ready(function(){
                 display: true,
                 position: 'top',
                 labels: {
-                    fontColor: '#2d2d2d'
+                    fontColor: '#000000'
                 }
             }
         }
@@ -293,7 +338,7 @@ $(document).ready(function(){
                 yAxes: [{
                     ticks: {
                         beginAtZero: true,
-                        fontColor: '#2d2d2d'
+                        fontColor: '#000000'
                     },
                     gridLines: {
                         color: "rgba(0, 0, 0, 0.1)"
@@ -301,7 +346,7 @@ $(document).ready(function(){
                 }],
                 xAxes: [{
                     ticks: {
-                        fontColor: '#2d2d2d'
+                        fontColor: '#000000'
                     },
                     gridLines: {
                         color: "rgba(0, 0, 0, 0.1)"
@@ -312,7 +357,7 @@ $(document).ready(function(){
                 display: true,
                 position: 'top',
                 labels: {
-                    fontColor: '#2d2d2d'
+                    fontColor: '#000000'
                 }
             }
         }
@@ -340,7 +385,7 @@ $(document).ready(function(){
                 yAxes: [{
                     ticks: {
                         beginAtZero: true,
-                        fontColor: '#2d2d2d'
+                        fontColor: '#000000'
                     },
                     gridLines: {
                         color: "rgba(0, 0, 0, 0.1)"
@@ -348,7 +393,7 @@ $(document).ready(function(){
                 }],
                 xAxes: [{
                     ticks: {
-                        fontColor: '#2d2d2d'
+                        fontColor: '#000000'
                     },
                     gridLines: {
                         color: "rgba(0, 0, 0, 0.1)"
@@ -359,7 +404,7 @@ $(document).ready(function(){
                 display: true,
                 position: 'top',
                 labels: {
-                    fontColor: '#2d2d2d'
+                    fontColor: '#000000'
                 }
             }
         }
@@ -387,7 +432,7 @@ $(document).ready(function(){
                 yAxes: [{
                     ticks: {
                         beginAtZero: true,
-                        fontColor: '#2d2d2d'
+                        fontColor: '#000000'
                     },
                     gridLines: {
                         color: "rgba(0, 0, 0, 0.1)"
@@ -395,7 +440,7 @@ $(document).ready(function(){
                 }],
                 xAxes: [{
                     ticks: {
-                        fontColor: '#2d2d2d'
+                        fontColor: '#000000'
                     },
                     gridLines: {
                         color: "rgba(0, 0, 0, 0.1)"
@@ -406,10 +451,15 @@ $(document).ready(function(){
                 display: true,
                 position: 'top',
                 labels: {
-                    fontColor: '#2d2d2d'
+                    fontColor: '#000000'
                 }
             }
         }
+    });
+    
+    // Listen for theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+        location.reload(); // Reload to apply new color scheme
     });
 });
 </script>

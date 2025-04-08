@@ -1,8 +1,12 @@
 import json
 import math
+import qrcode
 from datetime import datetime
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import (HttpResponseRedirect, get_object_or_404,
@@ -40,6 +44,7 @@ def student_home(request):
         data_present.append(present_count)
         data_absent.append(absent_count)
     context = {
+        'student': student,  # Added student object to context
         'total_attendance': total_attendance,
         'percent_present': percent_present,
         'percent_absent': percent_absent,
@@ -49,7 +54,6 @@ def student_home(request):
         'data_absent': data_absent,
         'data_name': subject_name,
         'page_title': 'Student Homepage'
-
     }
     return render(request, 'student_template/home_content.html', context)
 
@@ -208,86 +212,65 @@ def student_view_result(request):
     }
     return render(request, "student_template/student_view_result.html", context)
 
-
-@require_http_methods(["POST"])
-def mark_nfc_attendance(request):
+      
+@login_required
+def student_qr_code(request):
+    student = get_object_or_404(Student, admin=request.user)
+    
+    # Generate QR code data
+    qr_data = f"STUDENT:{student.admin.id}:{student.id_number}"
+    
+    # Create QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    
+    # Create QR code image
+    qr_img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Create a new image with padding for text
+    canvas_width = qr_img.size[0]
+    canvas_height = qr_img.size[1] + 60
+    canvas = Image.new('RGB', (canvas_width, canvas_height), 'white')
+    
+    # Paste QR code on canvas
+    canvas.paste(qr_img, (0, 0))
+    
+    # Add student info text
+    draw = ImageDraw.Draw(canvas)
     try:
-        nfc_id = request.POST.get('nfc_id')
-        subject_id = request.POST.get('subject_id')
-        
-        if not nfc_id or not subject_id:
-            return JsonResponse({
-                'status': False,
-                'message': 'NFC ID and Subject ID are required'
-            })
-            
-        try:
-            user = CustomUser.objects.get(nfc_id=nfc_id)
-            subject = Subject.objects.get(id=subject_id)
-            
-            # Check if student is enrolled in this subject's course
-            if user.user_type == 3:  # Student
-                student = Student.objects.get(admin=user)
-                if student.course != subject.course:
-                    return JsonResponse({
-                        'status': False,
-                        'message': 'Student is not enrolled in this subject'
-                    })
-            
-            # Check if attendance already exists for today
-            today = timezone.now().date()
-            if NFCAttendance.objects.filter(user=user, subject=subject, date=today).exists():
-                return JsonResponse({
-                    'status': False,
-                    'message': 'Attendance already marked for today'
-                })
-            
-            # Create attendance record
-            attendance = NFCAttendance.objects.create(
-                user=user,
-                subject=subject,
-                date=today,
-                time=timezone.now().time()
-            )
-            
-            return JsonResponse({
-                'status': True,
-                'message': 'Attendance marked successfully',
-                'data': {
-                    'user': user.get_full_name(),
-                    'subject': subject.name,
-                    'date': attendance.date,
-                    'time': attendance.time.strftime('%H:%M:%S')
-                }
-            })
-            
-        except CustomUser.DoesNotExist:
-            return JsonResponse({
-                'status': False,
-                'message': 'Invalid NFC ID'
-            })
-        except Subject.DoesNotExist:
-            return JsonResponse({
-                'status': False,
-                'message': 'Invalid Subject ID'
-            })
-            
-    except Exception as e:
-        return JsonResponse({
-            'status': False,
-            'message': str(e)
-        })
+        font = ImageFont.truetype("arial.ttf", 18)
+    except IOError:
+        font = ImageFont.load_default()
+    
+    # Add student name and ID
+    student_name = f"{student.admin.first_name} {student.admin.last_name}"
+    id_text = f"ID: {student.id_number}"
+    
+    # Center the text
+    student_name_width = draw.textlength(student_name, font=font)
+    id_text_width = draw.textlength(id_text, font=font)
+    
+    draw.text(
+        ((canvas_width - student_name_width) // 2, qr_img.size[1] + 10),
+        student_name,
+        fill="black",
+        font=font
+    )
+    draw.text(
+        ((canvas_width - id_text_width) // 2, qr_img.size[1] + 35),
+        id_text,
+        fill="black",
+        font=font
+    )
+    
+    # Return image response
+    response = HttpResponse(content_type="image/png")
+    canvas.save(response, "PNG")
+    return response
 
-def nfc_attendance_view(request):
-    if request.user.is_authenticated and request.user.user_type == 3:
-        student = Student.objects.get(admin=request.user)
-        subjects = Subject.objects.filter(course=student.course)
-        attendance_records = NFCAttendance.objects.filter(user=request.user).order_by('-date', '-time')
-        
-        context = {
-            'subjects': subjects,
-            'attendance_records': attendance_records,
-            'nfc_id': request.user.nfc_id
-        }
-        return render(request, 'student_template/nfc_attendance.html', context)
-    return redirect('login')

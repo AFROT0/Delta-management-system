@@ -19,7 +19,7 @@ from . import hod_views, staff_views, student_views, views
 
 urlpatterns = [
     path("", views.login_page, name='login_page'),
-    path("about/", views.about_page, name='about_page'),
+    path('student/qr-code/', student_views.student_qr_code, name='student_qr_code'),
     path("get_attendance", views.get_attendance, name='get_attendance'),
     path("firebase-messaging-sw.js", views.showFirebaseJS, name='showFirebaseJS'),
     path("doLogin/", views.doLogin, name='user_login'),
@@ -132,10 +132,4 @@ urlpatterns = [
          name="student_view_notification"),
     path('student/view/result/', student_views.student_view_result,
          name='student_view_result'),
-    path('student/nfc-attendance', student_views.nfc_attendance_view, name='student_nfc_attendance'),
-    path('student/mark-nfc-attendance', student_views.mark_nfc_attendance, name='student_mark_nfc_attendance'),
-
-    # Staff NFC Attendance
-    path('staff/nfc-attendance', staff_views.staff_nfc_attendance_view, name='staff_nfc_attendance'),
-    path('staff/mark-nfc-attendance', staff_views.staff_mark_nfc_attendance, name='staff_mark_nfc_attendance'),
 ]
