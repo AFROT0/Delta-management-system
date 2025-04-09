@@ -1,21 +1,61 @@
 MIT License
 
-Copyright (c) 2020 Owonubi Job Sunday
+Copyright (c) 2020 Owonubi Job Sunday  
+Modified by Delta University Graduation Team, 2025
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
+Permission is hereby granted, free of charge, to any person obtaining a copy  
+of this software and associated documentation files (the "Software"), to deal  
+in the Software without restriction, including without limitation the rights  
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell  
+copies of the Software, and to permit persons to whom the Software is  
 furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
+The above copyright notice and this permission notice shall be included in all  
 copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+---
+
+Modification Note (by Delta University Graduation Team, 2025):
+
+This project was originally structured by Owonubi Job Sunday (2020).  
+Substantial modifications have been made by a student team from Delta University (2025), including:
+
+- Addition of enhanced validation checks.  
+- Implementation of QR code generation for each student and its use in attendance logging.  
+- Fixes for issues related to user deletion in the database.  
+- Integration of dark mode.  
+- Redesign of the overall theme and the login screen.
+
+This modified version was developed as a graduation project to obtain a Bachelor's degree  
+in Management Information Systems. The contributing team members are:
+
+1. Ahmed Osama El-Saeed Mohamed Ali Arafah  
+2. Ahmed Gamal Mohamed El-Saeed El-Emam  
+3. Ahmed Assem Ibrahim Abdel-Meguid  
+4. Ahmed Abdel-Latif Mohamed Ibrahim Abdelrahman  
+5. Ahmed Maher Saad El-Hindawy  
+6. Donia Abdelwahab El-Saeed Abdelwahab Siam  
+7. Sandy Mahfouz Samir Shalaby Beshara  
+8. Sona Fathy Ali Hamed Gedamy  
+9. Seif Amir Lotfy Mohy El-Din  
+10. Shaimaa Mahrous Ali El-Sayed Mohamed  
+11. Abdelrahman Mohamed El-Sayed Abdelbary Abdelwahab  
+12. Abdelkader Saleh Abdelkader Attia El-Sayed  
+13. Faten El-Sayed Mahmoud Ali Ibrahim  
+14. Farha Ahmed Shokry Ahmed Abdelghany  
+15. Mohamed Rezk El-Shafey El-Saeed Ghazy  
+16. Nader El-Sayed El-Saeed Othman  
+17. Nermeen Ehab Awad Ibrahim Habib  
+18. Nourhan Mohamed Moneer Abdo Khafagy  
+19. Hagar Samir Ball Mohamed El-Sayed  
+20. Hend Mohamed Rezk Mohamed Attia
+
+---
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR  
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE  
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER  
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,  
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  
 SOFTWARE.
