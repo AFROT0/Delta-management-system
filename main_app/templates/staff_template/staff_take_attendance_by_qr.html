@@ -173,7 +173,7 @@
                             <div class="input-group">
                                 <input type="text" class="form-control" name="student_id" id="student_id" placeholder="Enter student ID" required>
                             </div>
-                            <small class="form-text text-muted">scan qr/id to record attendance</small>
+                            <small class="form-text text-muted">scan qr / id to record attendance</small>
                         </div>
 
                         <div class="student-info" id="student_info">
@@ -338,7 +338,28 @@ const doneTypingInterval = 500; // wait for 500ms after user stops typing
 
 document.getElementById('student_id').addEventListener('input', function() {
     clearTimeout(typingTimer);
-    const studentId = this.value;
+    let studentId = this.value;
+    
+    // Try to parse JSON if the input looks like JSON data from QR code
+    if (studentId.trim().startsWith('{') && studentId.trim().endsWith('}')) {
+        try {
+            const jsonData = JSON.parse(studentId);
+            if (jsonData.student_code) {
+                // Extract just the student code from the JSON
+                studentId = jsonData.student_code;
+                // Update the input field to show only the student code
+                this.value = studentId;
+                
+                // Also update the hidden field
+                document.getElementById('attendance_student_id').value = studentId;
+                
+                console.log("Extracted student_code from QR JSON:", studentId);
+            }
+        } catch (e) {
+            console.error("Failed to parse QR JSON data:", e);
+            // Continue with the raw input if JSON parsing fails
+        }
+    }
     
     // Hide student info and attendance details when input is empty
     if (!studentId) {
@@ -346,6 +367,9 @@ document.getElementById('student_id').addEventListener('input', function() {
         document.getElementById('attendance_details').style.display = 'none';
         return;
     }
+    
+    // Set the extracted student ID to the hidden field regardless
+    document.getElementById('attendance_student_id').value = studentId;
 
     // Wait for user to stop typing before making the request
     typingTimer = setTimeout(() => {

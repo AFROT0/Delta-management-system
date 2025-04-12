@@ -11,55 +11,118 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">{{page_title}}</h3>
+                        <div class="float-right">
+                            <a href="{% url 'export_students_excel' %}" class="btn btn-success">
+                                <i class="fas fa-file-excel mr-1"></i> Export to Excel
+                            </a>
+                            <button onclick="printReport()" class="btn btn-primary ml-2">
+                                <i class="fas fa-print mr-1"></i> Print Report
+                            </button>
+                        </div>
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body">
-                        <table id="example2" class="table table-bordered">
-                            <thead class="thead-dark">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Full Name</th>
-                                    <th>Email</th>
-                                    <th>Gender</th>
-                                    <th>Course</th>
-                                    <th>QR Code</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for student in students %}
-                                <tr>
-                                    <td>{{ forloop.counter}}</td>
-                                    <td>{{student.first_name}}, {{student.last_name}}</td>
-                                    <td>{{student.email}}</td>
-                                    <td>{{student.gender}}</td>
-                                    <td>{{student.student.course.name}}</td>
-                                    <td>
-                                        {% if student.qr_code %}
-                                        <div class="text-center">
-                                            <img class="img img-fluid mb-2" style="width: 56px; height: 56px;"
-                                                src="/media/{{student.qr_code}}" alt="QR Code">
-                                            {% if student.student_code %}
-                                            <div class="font-weight-bold">ID: {{student.student_code}}</div>
+                        <div id="printable-content">
+                            <table id="example2" class="table table-bordered">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Full Name</th>
+                                        <th>Email</th>
+                                        <th>Gender</th>
+                                        <th>Course</th>
+                                        <th>QR Code</th>
+                                        <th class="no-print">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for student in students %}
+                                    <tr>
+                                        <td>{{ forloop.counter}}</td>
+                                        <td>{{student.first_name}}, {{student.last_name}}</td>
+                                        <td>{{student.email}}</td>
+                                        <td>{{student.gender}}</td>
+                                        <td>{{student.student.course.name}}</td>
+                                        <td>
+                                            {% if student.qr_code %}
+                                            <div class="text-center">
+                                                <img class="img img-fluid mb-2" style="width: 56px; height: 56px;"
+                                                    src="/media/{{student.qr_code}}" alt="QR Code">
+                                                {% if student.student_code %}
+                                                <div class="font-weight-bold">ID: {{student.student_code}}</div>
+                                                {% endif %}
+                                            </div>
+                                            {% else %}
+                                            No QR Code
                                             {% endif %}
-                                        </div>
-                                        {% else %}
-                                        No QR Code
-                                        {% endif %}
-                                    </td>
-                                    
-                                    <td>
-                                        <a href="{% url 'edit_student' student.student.id %}" class="btn btn-info">Edit</a> -
-                                        <a href="{% url 'delete_student' student.student.id %}" class="btn btn-danger" onclick="return confirm('Are you sure about this ?')">Delete</a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                        </td>
+                                        
+                                        <td class="no-print">
+                                            <a href="{% url 'edit_student' student.student.id %}" class="btn btn-info">Edit</a> -
+                                            <a href="{% url 'delete_student' student.student.id %}" class="btn btn-danger" onclick="return confirm('Are you sure about this ?')">Delete</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
+
+{% block extra_js %}
+<script>
+    function printReport() {
+        let printContents = document.getElementById('printable-content').innerHTML;
+        let originalContents = document.body.innerHTML;
+        
+        // Create a style element for print-specific CSS
+        let printStyles = `
+            <style>
+                @media print {
+                    .no-print {
+                        display: none !important;
+                    }
+                    body {
+                        padding: 20px;
+                        font-family: Arial, sans-serif;
+                    }
+                    h1 {
+                        text-align: center;
+                        margin-bottom: 20px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                }
+            </style>
+        `;
+
+        // Create a header for the printed report
+        let reportHeader = `
+            <div class="print-header">
+                <h1>Student Report</h1>
+                <p>Generated on: ${new Date().toLocaleDateString()}</p>
+            </div>
+        `;
+
+        document.body.innerHTML = printStyles + reportHeader + printContents;
+        window.print();
+        document.body.innerHTML = originalContents;
+    }
+</script>
+{% endblock extra_js %}
+
 {% endblock content %}

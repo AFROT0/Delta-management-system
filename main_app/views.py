@@ -3,6 +3,8 @@ import requests
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponse, JsonResponse
+from django.contrib.auth import get_user_model
+CustomUser = get_user_model()
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Attendance, AttendanceReport, Student, Subject, Session
@@ -15,6 +17,11 @@ from django.contrib import messages
 from .models import Student, AttendanceReport, LeaveReportStudent, FeedbackStudent, NotificationStudent 
 from django.contrib.auth.decorators import login_required
 from .models import FeedbackStudent as Feedback
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from django.http import HttpResponse
+from django.urls import path
+from datetime import datetime
 
 # Create your views here.
 
@@ -52,7 +59,194 @@ def logout_user(request):
         logout(request)
     return redirect("/")
 
-
+def export_students_excel(request):
+    # Create a new workbook and select the active worksheet
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Students Report"
+    
+    # Define styles
+    header_font = Font(name='Arial', bold=True, size=12, color='FFFFFF')
+    header_fill = PatternFill(start_color='366092', end_color='366092', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center')
+    thin_border = Border(
+        left=Side(style='thin'), 
+        right=Side(style='thin'), 
+        top=Side(style='thin'), 
+        bottom=Side(style='thin')
+    )
+    
+    # Add headers
+    headers = ['#', 'Full Name', 'Email', 'Gender', 'Course', 'Student ID']
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = thin_border
+    
+    # Add data
+    students = CustomUser.objects.filter(user_type=3)  # Assuming 3 is the user_type for students
+    for row_num, student in enumerate(students, 2):
+        # Row number
+        ws.cell(row=row_num, column=1).value = row_num - 1
+        
+        # Full Name
+        ws.cell(row=row_num, column=2).value = f"{student.first_name}, {student.last_name}"
+        
+        # Email
+        ws.cell(row=row_num, column=3).value = student.email
+        
+        # Gender
+        ws.cell(row=row_num, column=4).value = student.gender
+        
+        # Course
+        ws.cell(row=row_num, column=5).value = student.student.course.name
+        
+        # Student ID
+        ws.cell(row=row_num, column=6).value = student.student_code if hasattr(student, 'student_code') else ""
+        
+        # Apply borders to all cells in this row
+        for col_num in range(1, 7):
+            ws.cell(row=row_num, column=col_num).border = thin_border
+    
+    # Adjust column widths
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column].width = adjusted_width
+    
+    # Create the HttpResponse with Excel content type
+    filename = f"Students_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    # Save the workbook to the response
+    wb.save(response)
+    return response
+def export_attendance_excel(request):
+    # Get parameters from request
+    subject_id = request.GET.get('subject')
+    session_id = request.GET.get('session')
+    attendance_date_id = request.GET.get('attendance_date_id')
+    
+    # Validate parameters
+    if not all([subject_id, session_id, attendance_date_id]):
+        return HttpResponse("Missing parameters", status=400)
+    
+    try:
+        # Get necessary data
+        subject = Subject.objects.get(id=subject_id)
+        session = Session.objects.get(id=session_id)
+        attendance = Attendance.objects.get(id=attendance_date_id)
+        attendance_reports = AttendanceReport.objects.filter(attendance=attendance)
+        
+        # Create a new workbook and select the active worksheet
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Attendance Report"
+        
+        # Define styles
+        header_font = Font(name='Arial', bold=True, size=12, color='FFFFFF')
+        header_fill = PatternFill(start_color='366092', end_color='366092', fill_type='solid')
+        header_alignment = Alignment(horizontal='center', vertical='center')
+        
+        present_fill = PatternFill(start_color='C6EFCE', end_color='C6EFCE', fill_type='solid')
+        absent_fill = PatternFill(start_color='FFC7CE', end_color='FFC7CE', fill_type='solid')
+        
+        thin_border = Border(
+            left=Side(style='thin'), 
+            right=Side(style='thin'), 
+            top=Side(style='thin'), 
+            bottom=Side(style='thin')
+        )
+        
+        # Add title and info
+        ws.merge_cells('A1:D1')
+        ws.cell(row=1, column=1).value = "Attendance Report"
+        ws.cell(row=1, column=1).font = Font(name='Arial', bold=True, size=14)
+        ws.cell(row=1, column=1).alignment = Alignment(horizontal='center')
+        
+        ws.merge_cells('A2:D2')
+        ws.cell(row=2, column=1).value = f"Subject: {subject.name} | Session: {session} | Date: {attendance.attendance_date}"
+        ws.cell(row=2, column=1).font = Font(name='Arial', italic=True)
+        ws.cell(row=2, column=1).alignment = Alignment(horizontal='center')
+        
+        # Add headers (row 4)
+        headers = ['#', 'Student Name', 'Status']
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=4, column=col_num)
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = thin_border
+        
+        # Add data
+        present_count = 0
+        absent_count = 0
+        
+        for row_num, report in enumerate(attendance_reports, 5):
+            # Row number
+            cell = ws.cell(row=row_num, column=1)
+            cell.value = row_num - 4
+            cell.border = thin_border
+            
+            # Student Name
+            cell = ws.cell(row=row_num, column=2)
+            cell.value = f"{report.student.admin.first_name} {report.student.admin.last_name}"
+            cell.border = thin_border
+            
+            # Status
+            cell = ws.cell(row=row_num, column=3)
+            status = "Present" if report.status else "Absent"
+            cell.value = status
+            cell.border = thin_border
+            
+            # Color coding for status
+            if report.status:
+                cell.fill = present_fill
+                present_count += 1
+            else:
+                cell.fill = absent_fill
+                absent_count += 1
+        
+        # Add summary
+        summary_row = len(attendance_reports) + 5
+        ws.merge_cells(f'A{summary_row}:B{summary_row}')
+        ws.cell(row=summary_row, column=1).value = f"Total Students: {len(attendance_reports)}"
+        ws.cell(row=summary_row, column=1).font = Font(bold=True)
+        ws.cell(row=summary_row, column=1).border = thin_border
+        
+        ws.cell(row=summary_row, column=3).value = f"Present: {present_count} | Absent: {absent_count}"
+        ws.cell(row=summary_row, column=3).font = Font(bold=True)
+        ws.cell(row=summary_row, column=3).border = thin_border
+        
+        # Adjust column widths
+        ws.column_dimensions['A'].width = 5
+        ws.column_dimensions['B'].width = 30
+        ws.column_dimensions['C'].width = 15
+        
+        # Create the HttpResponse with Excel content type
+        filename = f"Attendance_Report_{subject.name}_{attendance.attendance_date.strftime('%Y%m%d')}.xlsx"
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        # Save the workbook to the response
+        wb.save(response)
+        return response
+        
+    except Exception as e:
+        return HttpResponse(f"Error: {str(e)}", status=500)
 
 def delete_student(request, student_id):
     try:

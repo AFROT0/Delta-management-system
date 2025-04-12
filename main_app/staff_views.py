@@ -284,10 +284,6 @@ def save_attendance(request):
         # Convert date string to date object
         attendance_date = datetime.strptime(date, '%Y-%m-%d').date()
         
-        # Validate that the attendance date is within the session dates
-        if not (session.start_year <= attendance_date <= session.end_year):
-            return JsonResponse({"status": "error", "message": "Attendance date is out of session range"})
-            
         attendance = Attendance(session=session, subject=subject, date=date)
         attendance.save()
 
@@ -562,6 +558,7 @@ def staff_get_student_session(request):
                 'course'
             ).get(admin__student_code=student_id)
             print(f"[DEBUG] Found student by code: {student.admin.first_name} {student.admin.last_name}")
+
         except Student.DoesNotExist:
             # If not found by student_code, try finding by ID
             try:
@@ -570,6 +567,7 @@ def staff_get_student_session(request):
                     'admin', 
                     'session',
                     'course'
+                    
                 ).get(id=student_id)
                 print(f"[DEBUG] Found student by ID: {student.admin.first_name} {student.admin.last_name}")
             except (Student.DoesNotExist, ValueError):
@@ -619,85 +617,7 @@ def staff_get_student_session(request):
             'details': str(e)
         }, status=500)
 
-@require_http_methods(["POST"])
-def staff_mark_nfc_attendance(request):
-    try:
-        nfc_id = request.POST.get('nfc_id')
-        subject_id = request.POST.get('subject_id')
-        
-        if not nfc_id or not subject_id:
-            return JsonResponse({
-                'status': False,
-                'message': 'NFC ID and Subject ID are required'
-            })
-            
-        try:
-            user = CustomUser.objects.get(nfc_id=nfc_id)
-            subject = Subject.objects.get(id=subject_id)
-            
-            # Check if staff is assigned to this subject
-            if user.user_type == 2:  # Staff
-                staff = Staff.objects.get(admin=user)
-                if staff != subject.staff:
-                    return JsonResponse({
-                        'status': False,
-                        'message': 'Staff is not assigned to this subject'
-                    })
-            
-            # Check if attendance already exists for today
-            today = timezone.now().date()
-            if NFCAttendance.objects.filter(user=user, subject=subject, date=today).exists():
-                return JsonResponse({
-                    'status': False,
-                    'message': 'Attendance already marked for today'
-                })
-            
-            # Create attendance record
-            attendance = NFCAttendance.objects.create(
-                user=user,
-                subject=subject,
-                date=today,
-                time=timezone.now().time()
-            )
-            
-            return JsonResponse({
-                'status': True,
-                'message': 'Attendance marked successfully',
-                'data': {
-                    'user': user.get_full_name(),
-                    'subject': subject.name,
-                    'date': attendance.date,
-                    'time': attendance.time.strftime('%H:%M:%S')
-                }
-            })
-            
-        except CustomUser.DoesNotExist:
-            return JsonResponse({
-                'status': False,
-                'message': 'Invalid NFC ID'
-            })
-        except Subject.DoesNotExist:
-            return JsonResponse({
-                'status': False,
-                'message': 'Invalid Subject ID'
-            })
-            
-    except Exception as e:
-        return JsonResponse({
-            'status': False,
-            'message': str(e)
-        })
 
-def staff_nfc_attendance_view(request):
-    if request.user.is_authenticated and request.user.user_type == 2:
-        staff = Staff.objects.get(admin=request.user)
-        subjects = Subject.objects.filter(staff=staff)
-        attendance_records = NFCAttendance.objects.filter(user=request.user).order_by('-date', '-time')
-        
-        context = {
-            'subjects': subjects,
-            'attendance_records': attendance_records,
-            'nfc_id': request.user.nfc_id
-        }
-        return render(request, 'staff_template/nfc_attendance.html', context)
-    return redirect('login')
+            
+            
+           
