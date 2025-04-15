@@ -31,6 +31,7 @@
                                         <th>Email</th>
                                         <th>Gender</th>
                                         <th>Course</th>
+                                        <th>Session</th>
                                         <th>QR Code</th>
                                         <th class="no-print">Actions</th>
                                     </tr>
@@ -43,6 +44,7 @@
                                         <td>{{student.email}}</td>
                                         <td>{{student.gender}}</td>
                                         <td>{{student.student.course.name}}</td>
+                                        <td>{{student.student.session.start_year}} - {{student.student.session.end_year}}</td>
                                         <td>
                                             {% if student.qr_code %}
                                             <div class="text-center">

@@ -77,6 +77,11 @@
         width: 100%;
     }
 
+    .btn-take-attendance:disabled {
+        background: #9e9e9e;
+        cursor: not-allowed;
+    }
+
     /* Student info card */
     .student-info {
         display: none;
@@ -108,8 +113,25 @@
         animation: fadeIn 0.3s ease;
     }
 
+    /* QR code display */
+    .qr-code-container {
+        text-align: center;
+        margin-top: 1rem;
+    }
+
+    .qr-code-image {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+    }
+
+    .student-id-code {
+        font-weight: bold;
+        margin-top: 0.5rem;
+    }
+
     /* Message boxes styles */
-    .success-message, .error-message {
+    .success-message, .error-message, .warning-message {
         display: none;
         padding: 1rem;
         border-radius: 8px;
@@ -129,13 +151,38 @@
         border: 1px solid #ef9a9a;
     }
 
-    .success-message i, .error-message i {
+    .warning-message {
+        background-color: #fff8e1;
+        color: #f57f17;
+        border: 1px solid #ffe082;
+    }
+
+    .success-message i, .error-message i, .warning-message i {
         margin-right: 0.5rem;
     }
 
-    .success-message.show, .error-message.show {
+    .success-message.show, .error-message.show, .warning-message.show {
         display: block;
         animation: slideIn 0.3s ease;
+    }
+
+    /* Course compatibility indicator */
+    .course-compatibility {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-align: center;
+    }
+
+    .course-compatible {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .course-incompatible {
+        background-color: #ffebee;
+        color: #c62828;
     }
 
     @keyframes slideIn {
@@ -168,6 +215,7 @@
                         <input type="hidden" name="subject_id" id="attendance_subject_id">
                         <input type="hidden" name="attendance_date" value="{{ today|date:'Y-m-d' }}">
                         <input type="hidden" name="attendance_status" id="attendance_status">
+                        <input type="hidden" name="staff_course" id="staff_course" value="{{ request.user.staff.course.name }}">
                         <div class="form-group">
                             <label for="student_id">Student ID / Code</label>
                             <div class="input-group">
@@ -191,6 +239,21 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Course</label>
+                                        <input type="text" class="form-control" id="student_course" readonly>
+                                    </div>
+                                    <div class="course-compatibility" id="course_compatibility"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="qr-code-container" id="qr_code_container">
+                                        <img id="qr_code_image" class="qr-code-image" src="" alt="QR Code">
+                                        <div id="student_code" class="student-id-code"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="attendance-details" id="attendance_details" style="display: none;">
@@ -209,7 +272,7 @@
                                 <input type="date" class="form-control" name="attendance_date" id="attendance_date" required>
                             </div>
 
-                            <button type="submit" class="btn btn-take-attendance">
+                            <button type="submit" id="attendance_button" class="btn btn-take-attendance">
                                 <i class="fas fa-check-circle mr-2"></i>Take Attendance
                             </button>
                         </div>
@@ -217,6 +280,11 @@
                     <div id="success_message" class="success-message">
                         <i class="fas fa-check-circle mr-2"></i>
                         <span id="success_text"></span>
+                    </div>
+
+                    <div id="warning_message" class="warning-message">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span id="warning_text"></span>
                     </div>
 
                     <div id="error_message" class="error-message">
@@ -233,6 +301,9 @@
 {% block custom_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Auto focus on student ID input
+    document.getElementById('student_id').focus();
+
     // Set default date to today
     document.getElementById('attendance_date').valueAsDate = new Date();
 
@@ -301,15 +372,42 @@ function showError(message) {
     errorDiv.style.display = 'block';
     errorDiv.classList.add('show');
     
-    // Hide success message if shown
+    // Hide success and warning messages if shown
     const successDiv = document.getElementById('success_message');
     successDiv.style.display = 'none';
     successDiv.classList.remove('show');
+    
+    const warningDiv = document.getElementById('warning_message');
+    warningDiv.style.display = 'none';
+    warningDiv.classList.remove('show');
     
     // Auto hide after 5 seconds
     setTimeout(() => {
         errorDiv.style.display = 'none';
         errorDiv.classList.remove('show');
+    }, 5000);
+}
+
+function showWarning(message) {
+    const warningDiv = document.getElementById('warning_message');
+    const warningText = document.getElementById('warning_text');
+    warningText.textContent = message;
+    warningDiv.style.display = 'block';
+    warningDiv.classList.add('show');
+    
+    // Hide success and error messages if shown
+    const successDiv = document.getElementById('success_message');
+    successDiv.style.display = 'none';
+    successDiv.classList.remove('show');
+    
+    const errorDiv = document.getElementById('error_message');
+    errorDiv.style.display = 'none';
+    errorDiv.classList.remove('show');
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        warningDiv.style.display = 'none';
+        warningDiv.classList.remove('show');
     }, 5000);
 }
 
@@ -320,7 +418,11 @@ function showSuccess(message) {
     successDiv.style.display = 'block';
     successDiv.classList.add('show');
     
-    // Hide error message if shown
+    // Hide warning and error messages if shown
+    const warningDiv = document.getElementById('warning_message');
+    warningDiv.style.display = 'none';
+    warningDiv.classList.remove('show');
+    
     const errorDiv = document.getElementById('error_message');
     errorDiv.style.display = 'none';
     errorDiv.classList.remove('show');
@@ -330,6 +432,40 @@ function showSuccess(message) {
         successDiv.style.display = 'none';
         successDiv.classList.remove('show');
     }, 5000);
+}
+
+// Function to check if student's course is compatible with staff's course
+function checkCourseCompatibility(studentCourse) {
+    const staffCourse = document.getElementById('staff_course').value;
+    const compatibilityIndicator = document.getElementById('course_compatibility');
+    const attendanceButton = document.getElementById('attendance_button');
+    
+    // Compare courses
+    if (studentCourse.toLowerCase() === staffCourse.toLowerCase()) {
+        // Courses match
+        compatibilityIndicator.textContent = "Student is registered with your course";
+        compatibilityIndicator.className = "course-compatibility course-compatible";
+        
+        // Enable attendance button
+        attendanceButton.disabled = false;
+        
+        // Show success notification
+        showSuccess("Student is already registered with you. You can record their attendance.");
+        
+        return true;
+    } else {
+        // Courses don't match
+        compatibilityIndicator.textContent = " The student is registered in " + studentCourse + " course and not registered in " + staffCourse;
+        compatibilityIndicator.className = "course-compatibility course-incompatible";
+        
+        // Disable attendance button
+        attendanceButton.disabled = true;
+        
+        // Show warning notification
+        showWarning("This student cannot be registered due to course mismatch.");
+        
+        return false;
+    }
 }
 
 // Handle student lookup
@@ -408,8 +544,49 @@ document.getElementById('student_id').addEventListener('input', function() {
             if (data.name && data.session) {
                 document.getElementById('student_name').value = data.name;
                 document.getElementById('student_session').value = data.session;
+                
+                // Set course information if available
+                if (data.course) {
+                    document.getElementById('student_course').value = data.course;
+                    
+                    // Check course compatibility
+                    const isCompatible = checkCourseCompatibility(data.course);
+                    
+                    // Show attendance details only if courses are compatible
+                    document.getElementById('attendance_details').style.display = isCompatible ? 'block' : 'none';
+                } else {
+                    document.getElementById('student_course').value = 'Not specified';
+                    
+                    // Can't determine compatibility without course
+                    showWarning("Student course not specified. Cannot verify compatibility.");
+                    document.getElementById('attendance_details').style.display = 'none';
+                    
+                    // Disable attendance button
+                    document.getElementById('attendance_button').disabled = true;
+                }
+                
+                // Set QR code if available
+                const qrCodeContainer = document.getElementById('qr_code_container');
+                const qrCodeImage = document.getElementById('qr_code_image');
+                const studentCodeElement = document.getElementById('student_code');
+                
+                if (data.qr_code) {
+                    qrCodeImage.src = '/media/' + data.qr_code;
+                    qrCodeImage.style.display = 'block';
+                    qrCodeContainer.style.display = 'block';
+                } else {
+                    qrCodeImage.style.display = 'none';
+                }
+                
+                // Set student code if available
+                if (data.student_code) {
+                    studentCodeElement.textContent = 'ID: ' + data.student_code;
+                    studentCodeElement.style.display = 'block';
+                } else {
+                    studentCodeElement.style.display = 'none';
+                }
+                
                 document.getElementById('student_info').classList.add('active');
-                document.getElementById('attendance_details').style.display = 'block';
             } else {
                 showError('Student data not found. Please check the ID and try again.');
             }

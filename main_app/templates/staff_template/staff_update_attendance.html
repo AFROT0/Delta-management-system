@@ -21,6 +21,43 @@
         font-size: 1.0em !important;
         padding: 8px !important;
     }
+    
+    /* Table styling */
+    .attendance-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    
+    .attendance-table th, .attendance-table td {
+        padding: 12px;
+        text-align: left;
+        border: 1px solid #ddd;
+    }
+    
+    .attendance-table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+    
+    .attendance-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    
+    .status-present {
+        color: green;
+        font-weight: bold;
+    }
+    
+    .status-absent {
+        color: red;
+        font-weight: bold;
+    }
+    
+    .status-not-recorded {
+        color: #888;
+        font-style: italic;
+    }
 </style>
 
 <section class="content">
@@ -34,7 +71,6 @@
                     </div>
 
                     <!-- /.card-header -->
-                    <!-- form start -->
                     <div class="card-body">
                         <div class="form-group">
                             <label>Subject</label>
@@ -66,7 +102,7 @@
                             </div>
                             <div class="form-group">
                                 <div id="fetch_student_block" style="display: none;">
-                                    <button type="button" id='fetch_student' class="btn btn-success btn-block">Fetch Students</button>
+                                    <button type="button" id='fetch_student' class="btn btn-success btn-block">View Students Attendance</button>
                                 </div>
                                 <div id='student_data' class="card-footer">
                                 </div>
@@ -83,9 +119,18 @@
 {% block custom_js %}
 <script>
     $(document).ready(function () {
+        // Store the subject and session for later use
+        var currentSubject = "";
+        var currentSession = "";
+        
         $("#fetch_attendance").click(function(){
             var subject = $("#subject").val()
             var session = $("#session").val()
+            
+            // Store the selected values
+            currentSubject = subject;
+            currentSession = session;
+            
             if (session.length < 1 || subject.length < 1){
                 Swal.fire({
                     icon: 'warning',
@@ -157,99 +202,113 @@
                 });
                 return false;
             }
+            
+            var fetchBtn = $(this)
+            fetchBtn.prop('disabled', true)
+            fetchBtn.html('<i class="fas fa-spinner fa-spin"></i> Loading Attendance Data...')
+            
+            // Make two AJAX requests: one for attendance data and one for all enrolled students
             $.ajax({
                 url: "{% url 'get_student_attendance' %}",
                 type: 'POST',
                 data: {
-                    attendance_date_id:attendance_date,
+                    attendance_date_id: attendance_date,
                 }
-            }).done(function (response) {
-                var json_data = JSON.parse(response)
-                if (json_data.length < 1) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'No Data',
-                        text: 'No student data to display',
-                        confirmButtonColor: '#28a745'
-                    });
-                } else {
-                    var div_data = "<hr/><div class='form-group'></div><div class='form-group'> <label>Student Attendance</label><div class='row'>"
-                    for (key in json_data) {
-                        div_data += "<div class='col-lg-3'><div class='form-check custom-control custom-checkbox'><input type='checkbox' class='custom-control-input' " + (json_data[key]['status'] ? "checked='checked'" : "")+" name='student_data[]' value=" + json_data[key]['id'] + " id='checkbox" + json_data[key]['id'] + "' /> <label for='checkbox" + json_data[key]['id'] + "' class='custom-control-label'>" + json_data[key]['name']  + (json_data[key]['status'] ? " [Present] " : " [Absent] ")+"</label></div> </div>"
-                    }
-                    div_data += "</div></div>"
-                    div_data += "<div class='form-group'><button id='save_attendance' class='btn btn-success' type='button'>Save Attendance</button></div>"
-                    $("#student_data").html(div_data)
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true
-                    });
-                    Toast.fire({
-                        icon: 'success',
-                        title: 'Student data loaded successfully'
-                    });
-                }
-            }).fail(function (response) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Error in fetching student data',
-                    confirmButtonColor: '#28a745'
-                });
-            })
-        })
-
-        $(document).on('click', '#save_attendance', function () {
-            $(this).text("Updating Attendance Data...")
-            var student_data = $("input[name='student_data[]']").map(function () {
-                if ($(this).is(":checked")){
-                    return {'id':$(this).val(), 'status': 1};
-                }
-                return {'id':$(this).val(), 'status': 0};
-            }).get()
-      
-            student_data = JSON.stringify(student_data)
-            var attendance_date = $("#attendance_date").val()
-            $.ajax({
-                url: "{% url 'update_attendance' %}",
-                type: 'POST',
-                data: {
-                    date: attendance_date,
-                    student_ids: student_data,
-                }
-            }).done(function (response) {
-                if (response == 'OK'){
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success',
-                        text: 'Attendance updated successfully',
-                        confirmButtonColor: '#28a745'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            location.reload();
+            }).done(function (attendanceResponse) {
+                var attendanceData = JSON.parse(attendanceResponse);
+                
+                // Now fetch all students enrolled in this subject and session
+                $.ajax({
+                    url: "{% url 'get_students' %}",
+                    type: 'POST',
+                    data: {
+                        subject: currentSubject,
+                        session: currentSession
+                    },
+                    dataType: 'json'
+                }).done(function (enrolledStudents) {
+                    // Create a map of existing attendance records by student ID
+                    var attendanceMap = {};
+                    if (attendanceData.length > 0) {
+                        for (var i = 0; i < attendanceData.length; i++) {
+                            // Use student ID as key and attendance status as value
+                            attendanceMap[attendanceData[i].student_id] = {
+                                id: attendanceData[i].id,
+                                status: attendanceData[i].status
+                            };
                         }
-                    });
-                }else{
+                    }
+                    
+                    if (enrolledStudents.length < 1) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'No Data',
+                            text: 'No students are enrolled in this course for the selected session',
+                            confirmButtonColor: '#28a745'
+                        });
+                    } else {
+                        // Create a table for displaying student attendance
+                        var table_data = "<div class='table-responsive'><table class='attendance-table'>";
+                        table_data += "<thead><tr><th>#</th><th>Student Name</th><th>Attendance Status</th></tr></thead><tbody>";
+                        
+                        for (var i = 0; i < enrolledStudents.length; i++) {
+                            var student = enrolledStudents[i];
+                            var attendanceRecord = attendanceMap[student.id];
+                            
+                            // CHANGE HERE: From "Not Recorded" to "Absent"
+                            var status = "Absent";  // Change from "Not Recorded" to "Absent"
+                            var statusClass = "status-absent";  // Change from "status-not-recorded" to "status-absent"
+                            
+                            if (attendanceRecord) {
+                                status = attendanceRecord.status ? "Present" : "Absent";
+                                statusClass = attendanceRecord.status ? "status-present" : "status-absent";
+                            }
+                            
+                            table_data += "<tr>" +
+                                "<td>" + (i + 1) + "</td>" +
+                                "<td>" + student.name + "</td>" +
+                                "<td class='" + statusClass + "'>" + status + "</td>" +
+                                "</tr>";
+                        }
+                        
+                        table_data += "</tbody></table></div>";
+                        
+                        $("#student_data").html(table_data);
+                        
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                        Toast.fire({
+                            icon: 'success',
+                            title: 'Student attendance loaded successfully'
+                        });
+                    }
+                }).fail(function (response) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: 'Failed to update attendance. Please try again.',
+                        text: 'Error in fetching enrolled student data',
                         confirmButtonColor: '#28a745'
                     });
-                }
+                }).always(function() {
+                    fetchBtn.prop('disabled', false);
+                    fetchBtn.html('View Students Attendance');
+                });
             }).fail(function (response) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'Error in saving attendance',
+                    text: 'Error in fetching attendance data',
                     confirmButtonColor: '#28a745'
                 });
-                $(this).text("Save Attendance");
-            })
-        })
-    })
+                fetchBtn.prop('disabled', false);
+                fetchBtn.html('View Students Attendance');
+            });
+        });
+    });
 </script>
 {% endblock custom_js %}

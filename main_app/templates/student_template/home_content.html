@@ -25,7 +25,7 @@
                 <!-- small box -->
                 <div class="small-box bg-success">
                     <div class="inner">
-                        <h3>{{ percent_present }}<sup style="font-size: 20px">%</sup></h3>
+                        <h3><span id="percent-present">{{ percent_present }}</span><sup style="font-size: 20px">%</sup></h3>
 
                         <p>Percentage Present</p>
                     </div>
@@ -40,7 +40,7 @@
                 <!-- small box -->
                 <div class="small-box bg-danger">
                     <div class="inner">
-                        <h3>{{percent_absent}}<sup style="font-size: 20px">%</sup></h3>
+                        <h3><span id="percent-absent">{{percent_absent}}</span><sup style="font-size: 20px">%</sup></h3>
 
                         <p>Percentage Absent</p>
                     </div>
@@ -97,7 +97,9 @@
                     <button id="print-qr-btn" class="btn btn-primary">
                         <i class="fas fa-print mr-1"></i> Print QR Code
                     </button>
-                    
+                    <button id="refresh-attendance-btn" class="btn btn-success ml-2">
+                        <i class="fas fa-sync mr-1"></i> Refresh Attendance
+                    </button>
                 </div>
             {% else %}
                 <div class="alert alert-warning">
@@ -109,7 +111,7 @@
             {% endif %}
         </div>
         <h4 class="mt-3 mb-0">{{student.admin.first_name}} {{student.admin.last_name}}</h4>
-        <p class="text-muted"><small>Last updated: {% now "F j, Y" %}</small></p>
+        <p class="text-muted"><small>Last updated: <span id="last-updated">{% now "F j, Y" %}</span></small></p>
     </div>
 </div>
                 </div>
@@ -154,6 +156,43 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Recent Attendance Records -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card card-info">
+                    <div class="card-header text-center">
+                        <h3 class="card-title w-100">
+                            <i class="fas fa-history mr-2"></i>Recent Attendance Records - Last Activity of the Attendees
+                        </h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="recent-attendance-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-attendance-data">
+                                    <!-- Data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 {% endblock content %}
@@ -161,83 +200,222 @@
 {% block custom_js %}
   <script>
 $(document).ready(function(){
+    // Initialize charts with the server data
+    var attendanceDataChart;
+    var attendanceStatsChart;
 
-    //Dataset
-    var subjects = {{data_name|safe}}
-    var data_present = {{data_present}}
-    var data_absent = {{data_absent}}
-
-    //-------------
-    //- DONUT CHART -
-    var attendanceDataCanvas = $('#attendanceData').get(0).getContext('2d')
-    var donutData        = {
-      labels: [
-         'Present', 'Absent'
-      ],
-      datasets: [
-        {
-          data: [{{percent_present}}, {{percent_absent}}],
-          backgroundColor : ['#00a65a','#f56954'],
+    // Function to update the charts and stats with new data
+    function updateAttendanceVisuals(percentPresent, percentAbsent, subjectNames, presentData, absentData) {
+        // Update percentage values
+        $("#percent-present").text(percentPresent);
+        $("#percent-absent").text(percentAbsent);
+        
+        // Update the last updated timestamp
+        var now = new Date();
+        var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        $("#last-updated").text(months[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear() + " " + 
+                              now.getHours() + ":" + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes());
+        
+        // Destroy existing charts to prevent duplicates
+        if (attendanceDataChart) {
+            attendanceDataChart.destroy();
         }
-      ]
+        
+        if (attendanceStatsChart) {
+            attendanceStatsChart.destroy();
+        }
+        
+        // Recreate donut chart
+        var attendanceDataCanvas = $('#attendanceData').get(0).getContext('2d');
+        var donutData = {
+            labels: ['Present', 'Absent'],
+            datasets: [{
+                data: [percentPresent, percentAbsent],
+                backgroundColor: ['#00a65a', '#f56954'],
+            }]
+        };
+        var donutOptions = {
+            maintainAspectRatio: false,
+            responsive: true,
+        };
+        attendanceDataChart = new Chart(attendanceDataCanvas, {
+            type: 'doughnut',
+            data: donutData,
+            options: donutOptions      
+        });
+        
+        // Recreate bar chart
+        var areaChartData = {
+            labels: subjectNames,
+            datasets: [
+            {
+                label: 'Present In Class',
+                backgroundColor: 'rgba(60,141,188,0.9)',
+                borderColor: 'rgba(60,141,188,0.8)',
+                pointRadius: false,
+                pointColor: '#3b8bba',
+                pointStrokeColor: 'rgba(60,141,188,1)',
+                pointHighlightFill: '#fff',
+                pointHighlightStroke: 'rgba(60,141,188,1)',
+                data: presentData
+            },
+            {
+                label: 'Absent In Class',
+                backgroundColor: 'rgba(210, 214, 222, 1)',
+                borderColor: 'rgba(210, 214, 222, 1)',
+                pointRadius: false,
+                pointColor: 'rgba(210, 214, 222, 1)',
+                pointStrokeColor: '#c1c7d1',
+                pointHighlightFill: '#fff',
+                pointHighlightStroke: 'rgba(220,220,220,1)',
+                data: absentData
+            }]
+        };
+        var barChartCanvas = $('#attendanceStatistics').get(0).getContext('2d');
+        var barChartData = jQuery.extend(true, {}, areaChartData);
+        var temp = areaChartData.datasets[0];
+        barChartData.datasets[0] = temp;
+        var barChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            datasetFill: false
+        };
+        
+        attendanceStatsChart = new Chart(barChartCanvas, {
+            type: 'bar',
+            data: barChartData,
+            options: barChartOptions
+        });
     }
-    var donutOptions     = {
-      maintainAspectRatio : false,
-      responsive : true,
+    
+    // Function to fetch the latest attendance data for the student
+    function fetchAttendanceData() {
+        $.ajax({
+            url: "{% url 'get_student_attendance_data' %}",
+            type: 'GET',
+            data: {
+                student_id: "{{student.admin.id}}"
+            },
+            beforeSend: function() {
+                $("#refresh-attendance-btn").html('<i class="fas fa-spinner fa-spin"></i> Refreshing...');
+                $("#refresh-attendance-btn").prop('disabled', true);
+            }
+        }).done(function(response) {
+            var data = JSON.parse(response);
+            
+            if (data.status === 'success') {
+                // Update the charts and stats
+                updateAttendanceVisuals(
+                    data.percent_present,
+                    data.percent_absent,
+                    data.subjects,
+                    data.present_data,
+                    data.absent_data
+                );
+                
+                // Update recent attendance records
+                var recentAttendanceHTML = '';
+                if (data.recent_attendance && data.recent_attendance.length > 0) {
+                    for (var i = 0; i < data.recent_attendance.length; i++) {
+                        var record = data.recent_attendance[i];
+                        var statusClass = record.status ? 'badge badge-success' : 'badge badge-danger';
+                        var statusText = record.status ? 'Present' : 'Absent';
+                        
+                        recentAttendanceHTML += '<tr>' +
+                            '<td>' + record.date + '</td>' +
+                            '<td>' + record.subject + '</td>' +
+                            '<td><span class="' + statusClass + '">' + statusText + '</span></td>' +
+                            '</tr>';
+                    }
+                } else {
+                    recentAttendanceHTML = '<tr><td colspan="3" class="text-center">No recent attendance records found</td></tr>';
+                }
+                $("#recent-attendance-data").html(recentAttendanceHTML);
+                
+                // Show success message
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                Toast.fire({
+                    icon: 'success',
+                    title: 'Attendance data refreshed successfully'
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Failed to fetch attendance data',
+                    confirmButtonColor: '#28a745'
+                });
+            }
+        }).fail(function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to connect to the server',
+                confirmButtonColor: '#28a745'
+            });
+        }).always(function() {
+            $("#refresh-attendance-btn").html('<i class="fas fa-sync mr-1"></i> Refresh Attendance');
+            $("#refresh-attendance-btn").prop('disabled', false);
+        });
     }
-    var attendanceData = new Chart(attendanceDataCanvas, {
-      type: 'doughnut',
-      data: donutData,
-      options: donutOptions      
+    
+    // Attach click event to refresh button
+    $("#refresh-attendance-btn").click(function() {
+        fetchAttendanceData();
     });
 
-    //attendanceStatistics
-//Bar Chart
-var areaChartData = {
-    labels  : subjects,
-    datasets: [
-    {
-        label               : 'Present In Class',
-        backgroundColor     : 'rgba(60,141,188,0.9)',
-        borderColor         : 'rgba(60,141,188,0.8)',
-        pointRadius          : false,
-        pointColor          : '#3b8bba',
-        pointStrokeColor    : 'rgba(60,141,188,1)',
-        pointHighlightFill  : '#fff',
-        pointHighlightStroke: 'rgba(60,141,188,1)',
-        data                : data_present
-      },
+    // Initialize with existing data
+    var subjects = {{data_name|safe}};
+    var data_present = {{data_present}};
+    var data_absent = {{data_absent}};
 
-      {
-        label               : 'Absent In Class',
-        backgroundColor     : 'rgba(210, 214, 222, 1)',
-        borderColor         : 'rgba(210, 214, 222, 1)',
-        pointRadius         : false,
-        pointColor          : 'rgba(210, 214, 222, 1)',
-        pointStrokeColor    : '#c1c7d1',
-        pointHighlightFill  : '#fff',
-        pointHighlightStroke: 'rgba(220,220,220,1)',
-        data                : data_absent
-      },
-    ]
-  }
-var barChartCanvas = $('#attendanceStatistics').get(0).getContext('2d')
-var barChartData = jQuery.extend(true, {}, areaChartData)
-var temp = areaChartData.datasets[0]
-barChartData.datasets[0] = temp
-var barChartOptions = {
-  responsive              : true,
-  maintainAspectRatio     : false,
-  datasetFill             : false
-}
+    // Initialize charts on page load
+    updateAttendanceVisuals(
+        {{percent_present}}, 
+        {{percent_absent}}, 
+        subjects, 
+        data_present, 
+        data_absent
+    );
 
-var barChart = new Chart(barChartCanvas, {
-  type: 'bar', 
-  data: barChartData,
-  options: barChartOptions
-})
+    // Fetch recent attendance records on page load
+    $.ajax({
+        url: "{% url 'get_recent_attendance' %}",
+        type: 'GET',
+        data: {
+            student_id: "{{student.admin.id}}"
+        }
+    }).done(function(response) {
+        var data = JSON.parse(response);
+        
+        if (data.status === 'success' && data.recent_attendance) {
+            var recentAttendanceHTML = '';
+            if (data.recent_attendance.length > 0) {
+                for (var i = 0; i < data.recent_attendance.length; i++) {
+                    var record = data.recent_attendance[i];
+                    var statusClass = record.status ? 'badge badge-success' : 'badge badge-danger';
+                    var statusText = record.status ? 'Present' : 'Absent';
+                    
+                    recentAttendanceHTML += '<tr>' +
+                        '<td>' + record.date + '</td>' +
+                        '<td>' + record.subject + '</td>' +
+                        '<td><span class="' + statusClass + '">' + statusText + '</span></td>' +
+                        '</tr>';
+                }
+            } else {
+                recentAttendanceHTML = '<tr><td colspan="3" class="text-center">No recent attendance records found</td></tr>';
+            }
+            $("#recent-attendance-data").html(recentAttendanceHTML);
+        }
+    });
 
-// QR Code print functionality
+    // QR Code print functionality
     $("#print-qr-btn").click(function() {
         var printWindow = window.open('', 'Print QR Code', 'height=600,width=800');
         

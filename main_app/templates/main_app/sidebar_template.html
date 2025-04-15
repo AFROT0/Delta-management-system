@@ -378,7 +378,7 @@
                     </ul>
                 </li>
                 
-                <li class="nav-item has-treeview {% if request.path == staff_take_attendance or request.path == staff_take_attendance_by_barcode or request.path == staff_update_attendance %} menu-open {% endif %}">
+                <li class="nav-item has-treeview {% if request.path == staff_take_attendance_by_barcode or request.path == staff_update_attendance %} menu-open {% endif %}">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-calendar-alt"></i>
                         <p>
@@ -387,23 +387,13 @@
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
-                        <!-- Take Attendance -->
-                        <li class="nav-item">
-                            {% url 'staff_take_attendance' as staff_take_attendance %}
-                            <a href="{{ staff_take_attendance }}" 
-                               class="nav-link {% if request.path == staff_take_attendance %} active {% endif %}">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Take Attendance</p>
-                            </a>
-                        </li>
-                
                         <!-- Take Attendance by QR Code -->
                         <li class="nav-item">
                             {% url 'staff_take_attendance_by_qr' as staff_take_attendance_by_qr %}
                             <a href="{{ staff_take_attendance_by_qr }}" 
                                class="nav-link {% if request.path == staff_take_attendance_by_qr %} active {% endif %}">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Take Attendance by QR Code</p>
+                                <p>Take Attendance QR</p>
                             </a>
                         </li>
                 
@@ -413,7 +403,7 @@
                             <a href="{{ staff_update_attendance }}" 
                                class="nav-link {% if request.path == staff_update_attendance %} active {% endif %}">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>View/Update Attendance</p>
+                                <p>View Attendance</p>
                             </a>
                         </li>
                     </ul>

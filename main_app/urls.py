@@ -16,6 +16,9 @@ Including another URLconf
 from django.urls import path
 from .EditResultView import EditResultView
 from . import hod_views, staff_views, student_views, views
+from django.urls import path
+from .views import get_student_attendance_data, get_recent_attendance
+
 
 urlpatterns = [
     path("", views.login_page, name='login_page'),
@@ -92,7 +95,6 @@ urlpatterns = [
     path("staff/feedback/", staff_views.staff_feedback, name='staff_feedback'),
     path("staff/view/profile/", staff_views.staff_view_profile,
          name='staff_view_profile'),
-    path("staff/take/attendance/", staff_views.staff_take_attendance, name='staff_take_attendance'),
     path("staff/attendance/take/qr/", staff_views.staff_take_attendance_by_qr, name='staff_take_attendance_by_qr'),
     path("staff/get-student-session/", staff_views.staff_get_student_session, name='staff_get_student_session'),
     path("staff/attendance/update/", staff_views.staff_update_attendance, name='staff_update_attendance'),
@@ -119,7 +121,8 @@ urlpatterns = [
 
 
     # Student
-    path("student/home/", student_views.student_home, name='student_home'),
+    path('get_student_attendance_data/', get_student_attendance_data, name='get_student_attendance_data'),
+    path('get_recent_attendance/', get_recent_attendance, name='get_recent_attendance'),    path("student/home/", student_views.student_home, name='student_home'),
     path("student/view/attendance/", student_views.student_view_attendance,
          name='student_view_attendance'),
     path("student/apply/leave/", student_views.student_apply_leave,
@@ -134,4 +137,5 @@ urlpatterns = [
          name="student_view_notification"),
     path('student/view/result/', student_views.student_view_result,
          name='student_view_result'),
+    path("get_enrolled_students/", staff_views.get_enrolled_students, name='get_enrolled_students'),
 ]

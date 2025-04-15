@@ -1,5 +1,5 @@
 """
-ASGI config for college_management_system project.
+ASGI config for Delta_management_system project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

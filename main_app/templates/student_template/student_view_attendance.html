@@ -5,7 +5,6 @@
 
 {% block custom_css %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
 
 <style>
     /* --- General Styles --- */
@@ -14,8 +13,7 @@
         font-weight: 500 !important;
         margin-bottom: 8px !important;
     }
-    .form-group select.form-control,
-    .form-group input.form-control {
+    .form-group select.form-control {
         height: 45px !important;
         padding: 8px 12px !important;
         font-size: 1.0em !important;
@@ -23,8 +21,7 @@
         border: 1px solid #ced4da;
         transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
     }
-    .form-group select.form-control:focus,
-    .form-group input.form-control:focus {
+    .form-group select.form-control:focus {
         border-color: #80bdff;
         box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
     }
@@ -58,53 +55,26 @@
         margin-right: 8px;
     }
 
-    /* --- Dashboard Stats --- */
-    .dashboard-stats {
+    /* --- Summary Stats --- */
+    .summary-stats {
         display: none;
         margin: 20px 0;
-    }
-    .stat-card {
-        background: #fff;
-        border-radius: 8px;
+        background: #f8f9fa;
         padding: 15px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        text-align: center;
-        margin-bottom: 15px;
-        transition: transform 0.3s ease;
-    }
-    .stat-card:hover {
-        transform: translateY(-5px);
-    }
-    .stat-card .stat-value {
-        font-size: 24px;
-        font-weight: bold;
-        margin: 10px 0;
-    }
-    .stat-card .stat-label {
-        color: #6c757d;
-        font-size: 14px;
-    }
-    .stat-card.present {
-        border-left: 4px solid #28a745;
-    }
-    .stat-card.absent {
-        border-left: 4px solid #dc3545;
-    }
-    .stat-card.percentage {
+        border-radius: 8px;
         border-left: 4px solid #17a2b8;
     }
-    .stat-card.days {
-        border-left: 4px solid #ffc107;
+    .summary-stats .row {
+        margin-bottom: 8px;
     }
-
-    /* --- Chart Container --- */
-    .chart-container {
-        margin: 30px 0;
-        display: none;
-        background: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    .stat-label {
+        font-weight: bold;
+    }
+    .stat-present {
+        color: #28a745;
+    }
+    .stat-absent {
+        color: #dc3545;
     }
 
     /* --- Table Styles --- */
@@ -113,26 +83,15 @@
         border-collapse: collapse;
         width: 100%;
         display: none;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        border-radius: 8px;
-        overflow: hidden;
     }
     #attendance_table th, #attendance_table td {
         border: 1px solid #e9ecef;
         padding: 12px;
         text-align: center;
-        vertical-align: middle;
     }
     #attendance_table th {
         background-color: #f8f9fa;
         font-weight: bold;
-        color: #495057;
-    }
-    #attendance_table th:first-child {
-        border-top-left-radius: 8px;
-    }
-    #attendance_table th:last-child {
-        border-top-right-radius: 8px;
     }
     #attendance_tbody tr:hover {
         background-color: #f1f1f1;
@@ -186,6 +145,56 @@
         display: none;
     }
     
+    /* --- Session Info Box --- */
+    .session-info {
+        background: linear-gradient(145deg, #f8fdff 0%, #e9f7fb 100%);
+        border-left: 4px solid #17a2b8;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+
+    .session-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .session-info .row {
+        margin: 0 -10px;
+    }
+
+    .session-info p {
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.7);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+    }
+
+    .session-info strong {
+        font-weight: 600;
+        color: #2c3e50;
+        min-width: 120px;
+        margin-right: 10px;
+    }
+
+    .session-info p span {
+        color: #34495e;
+    }
+
+    @media (max-width: 768px) {
+        .session-info {
+            padding: 15px;
+        }
+        
+        .session-info p {
+            margin-bottom: 8px;
+        }
+    }
+    
     /* --- Responsive adjustments --- */
     @media (max-width: 768px) {
         .export-buttons {
@@ -212,10 +221,9 @@
         #attendance_table {
             display: table !important;
             width: 100%;
-            box-shadow: none;
         }
-        .dashboard-stats {
-            display: flex !important;
+        .summary-stats {
+            display: block !important;
         }
     }
 </style>
@@ -228,9 +236,23 @@
             <div class="col-md-12">
                 <div class="card card-dark">
                     <div class="card-header">
-                        <h3 class="card-title">{{page_title}}</h3>
+                        <h3 class="card-title text-white">{{page_title}}</h3>
                     </div>
                     <div class="card-body">
+                        <!-- Student Session Information -->
+                        <div class="session-info">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Student Name:</strong> {{student.first_name}} {{student.last_name}}</p>
+                                    <p><strong>Student ID:</strong> {{student.student_code}}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Course:</strong> {{student.student.course.name}}</p>
+                                    <p><strong>Session:</strong> {{student.student.session.start_year}} - {{student.student.session.end_year}}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Form Section -->
                         <div class="form-section no-print">
                             <div class="form-group">
@@ -243,25 +265,10 @@
                                 </select>
                             </div>
 
-                            <div class="row">
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="start_date">Start Date</label>
-                                        <input type="date" class="form-control" name="start_date" required id="start_date">
-                                    </div>
-                                </div>
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="end_date">End Date</label>
-                                        <input type="date" class="form-control" name="end_date" id="end_date">
-                                    </div>
-                                </div>
-                            </div>
-
                             <div class="row action-buttons">
                                 <div class="col-sm-6 mb-2 mb-sm-0">
                                     <button type="button" id="fetch_attendance" class="btn btn-success btn-block">
-                                        <i class="fas fa-search"></i> Fetch Attendance Data
+                                        <i class="fas fa-search"></i> Get Attendance Data
                                     </button>
                                 </div>
                                 <div class="col-sm-6">
@@ -280,38 +287,26 @@
 
                         <!-- Results Section -->
                         <div class="results-section">
-                            <!-- Dashboard Stats -->
-                            <div class="dashboard-stats row">
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="stat-card present">
-                                        <div class="stat-label">Present Days</div>
-                                        <div class="stat-value" id="present_count">0</div>
+                            <!-- Summary Stats -->
+                            <div class="summary-stats">
+                                <div class="row">
+                                    <div class="col-md-3 col-sm-6">
+                                        <span class="stat-label">Present Days:</span>
+                                        <span class="stat-present" id="present_count">0</span>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <span class="stat-label">Absent Days:</span>
+                                        <span class="stat-absent" id="absent_count">0</span>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <span class="stat-label">Attendance %:</span>
+                                        <span id="attendance_percentage">0%</span>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <span class="stat-label">Total Days:</span>
+                                        <span id="total_days">0</span>
                                     </div>
                                 </div>
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="stat-card absent">
-                                        <div class="stat-label">Absent Days</div>
-                                        <div class="stat-value" id="absent_count">0</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="stat-card percentage">
-                                        <div class="stat-label">Attendance %</div>
-                                        <div class="stat-value" id="attendance_percentage">0%</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="stat-card days">
-                                        <div class="stat-label">Total Days</div>
-                                        <div class="stat-value" id="total_days">0</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Chart -->
-                            <div class="chart-container">
-                                <h4 class="text-center mb-4">Attendance Overview</h4>
-                                <canvas id="attendance_chart"></canvas>
                             </div>
 
                             <!-- Table -->
@@ -337,9 +332,6 @@
                                 <button type="button" id="print_report" class="btn btn-info">
                                     <i class="fas fa-print"></i> Print Report
                                 </button>
-                                <button type="button" id="export_pdf" class="btn btn-danger">
-                                    <i class="fas fa-file-pdf"></i> Export to PDF
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -358,19 +350,15 @@
     $(document).ready(function () {
         // --- Cache jQuery Selectors ---
         var $subjectSelect = $("#subject");
-        var $startDateInput = $("#start_date");
-        var $endDateInput = $("#end_date");
         var $fetchButton = $("#fetch_attendance");
         var $clearButton = $("#clear_form");
         var $attendanceTable = $("#attendance_table");
         var $attendanceTbody = $("#attendance_tbody");
         var $messageArea = $("#message_area");
         var $exportExcel = $("#export_excel");
-        var $exportPdf = $("#export_pdf");
         var $printReport = $("#print_report");
         var $loadingIndicator = $("#loading_indicator");
-        var $dashboardStats = $(".dashboard-stats");
-        var $chartContainer = $(".chart-container");
+        var $summaryStats = $(".summary-stats");
         var $exportButtons = $(".export-buttons");
         var $lastUpdated = $("#last_updated");
         
@@ -379,28 +367,6 @@
         var $absentCount = $("#absent_count");
         var $attendancePercentage = $("#attendance_percentage");
         var $totalDays = $("#total_days");
-        
-        // Chart instance
-        var attendanceChart = null;
-
-        // --- Initialize date fields with reasonable defaults ---
-        function initializeDateFields() {
-            var today = new Date();
-            var thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(today.getDate() - 30);
-            
-            // Format dates as YYYY-MM-DD for input fields
-            $endDateInput.val(formatDate(today));
-            $startDateInput.val(formatDate(thirtyDaysAgo));
-        }
-        
-        // Helper to format date as YYYY-MM-DD
-        function formatDate(date) {
-            var year = date.getFullYear();
-            var month = String(date.getMonth() + 1).padStart(2, '0');
-            var day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
         
         // Get day name from date
         function getDayName(dateStr) {
@@ -423,103 +389,13 @@
             $exportButtons.hide();
             $messageArea.empty().hide();
             $loadingIndicator.hide();
-            $dashboardStats.hide();
-            $chartContainer.hide();
+            $summaryStats.hide();
             
             // Clear stats
             $presentCount.text("0");
             $absentCount.text("0");
             $attendancePercentage.text("0%");
             $totalDays.text("0");
-            
-            // Destroy chart if it exists
-            if (attendanceChart) {
-                attendanceChart.destroy();
-                attendanceChart = null;
-            }
-        }
-        
-        // --- Create attendance visualization chart ---
-        function createAttendanceChart(attendanceData) {
-            // Destroy previous chart instance if it exists
-            if (attendanceChart) {
-                attendanceChart.destroy();
-            }
-            
-            // Prepare data for chart
-            const dates = attendanceData.map(item => item.date);
-            const statuses = attendanceData.map(item => item.status ? 1 : 0); // 1 for present, 0 for absent
-            
-            // Get the canvas element
-            const ctx = document.getElementById('attendance_chart').getContext('2d');
-            
-            // Create the chart
-            attendanceChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        label: 'Attendance Status',
-                        data: statuses,
-                        backgroundColor: 'rgba(40, 167, 69, 0.2)',
-                        borderColor: 'rgba(40, 167, 69, 1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: statuses.map(status => 
-                            status === 1 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)'
-                        ),
-                        pointRadius: 6,
-                        pointHoverRadius: 8,
-                        stepped: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 1,
-                            ticks: {
-                                stepSize: 1,
-                                callback: function(value) {
-                                    return value === 0 ? 'Absent' : 'Present';
-                                }
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.raw;
-                                    return value === 1 ? 'Present' : 'Absent';
-                                },
-                                title: function(tooltipItems) {
-                                    return tooltipItems[0].label + ' (' + getDayName(tooltipItems[0].label) + ')';
-                                }
-                            }
-                        },
-                        legend: {
-                            display: false
-                        },
-                        title: {
-                            display: true,
-                            text: 'Daily Attendance Status',
-                            font: {
-                                size: 16
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Show the chart container
-            $chartContainer.show();
         }
         
         // --- Calculate and display attendance statistics ---
@@ -536,21 +412,10 @@
             $attendancePercentage.text(percentage + "%");
             $totalDays.text(attendanceData.length);
             
-            // Show the stats dashboard
-            $dashboardStats.show();
+            // Show the stats summary
+            $summaryStats.show();
         }
 
-        // --- Export to PDF function ---
-        function exportToPdf() {
-            showMessage('info', 'Preparing PDF download...');
-            
-            // In a real implementation, you would use a library like jsPDF
-            // or call a server endpoint that generates PDFs
-            setTimeout(function() {
-                showMessage('success', 'PDF export functionality would be implemented here with a server-side solution or jsPDF library.');
-            }, 1500);
-        }
-        
         // --- Print report function ---
         function printReport() {
             window.print();
@@ -560,8 +425,6 @@
         $fetchButton.click(function () {
             // Get form values
             var subject = $subjectSelect.val();
-            var start_date = $startDateInput.val();
-            var end_date = $endDateInput.val();
 
             // Clear previous results before fetching new data
             clearResults();
@@ -569,14 +432,6 @@
             // --- Validation ---
             if (!subject) {
                 showMessage('warning', "Please select a subject.");
-                return;
-            }
-            if (!start_date || !end_date) {
-                showMessage('warning', "Please select both start and end dates.");
-                return;
-            }
-            if (new Date(start_date) > new Date(end_date)) {
-                showMessage('warning', "Start date cannot be after end date.");
                 return;
             }
 
@@ -591,8 +446,6 @@
                 type: 'POST',
                 data: {
                     subject: subject,
-                    start_date: start_date,
-                    end_date: end_date,
                     csrfmiddlewaretoken: '{{ csrf_token }}'
                 }
             })
@@ -602,7 +455,7 @@
                     var json_data = JSON.parse(response);
 
                     if (json_data.length < 1) {
-                        showMessage('info', "No attendance data found for the selected criteria.");
+                        showMessage('info', "No attendance data found for the selected subject.");
                     } else {
                         // Sort data by date (ascending)
                         json_data.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -627,9 +480,6 @@
                         
                         // Calculate and show statistics
                         calculateStats(json_data);
-                        
-                        // Create attendance chart
-                        createAttendanceChart(json_data);
                         
                         // Update last updated timestamp
                         $lastUpdated.text(new Date().toLocaleString());
@@ -656,10 +506,9 @@
         // --- Export Excel Button Click ---
         $exportExcel.click(function(){
             var subjectName = $subjectSelect.find("option:selected").text();
-            var startDate = $startDateInput.val();
-            var endDate = $endDateInput.val();
+            var today = new Date();
             var safeSubjectName = subjectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            var filename = `attendance_${safeSubjectName}_${startDate}_to_${endDate}`;
+            var filename = `attendance_${safeSubjectName}_${today.toISOString().split('T')[0]}`;
 
             try {
                 const table = document.getElementById('attendance_table');
@@ -672,9 +521,11 @@
                 // Add statistics sheet
                 const statsData = [
                     ['Attendance Statistics', ''],
+                    ['Student Name', '{{student.first_name}} {{student.last_name}}'],
+                    ['Student ID', '{{student.student_code}}'],
+                    ['Course', '{{student.student.course.name}}'],
+                    ['Session', '{{student.student.session.start_year}} - {{student.student.session.end_year}}'],
                     ['Subject', subjectName],
-                    ['Start Date', startDate],
-                    ['End Date', endDate],
                     ['Present Days', $presentCount.text()],
                     ['Absent Days', $absentCount.text()],
                     ['Attendance Percentage', $attendancePercentage.text()],
@@ -694,21 +545,14 @@
             }
         });
         
-        // --- Export PDF Button Click ---
-        $exportPdf.click(exportToPdf);
-        
         // --- Print Report Button Click ---
         $printReport.click(printReport);
 
         // --- Clear Button Click ---
         $clearButton.click(function() {
             $subjectSelect.val('');
-            initializeDateFields(); // Reset to default dates instead of clearing
             clearResults();
         });
-        
-        // Initialize with default dates
-        initializeDateFields();
 
     }); // End of $(document).ready
 </script>

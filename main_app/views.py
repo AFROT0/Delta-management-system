@@ -296,7 +296,141 @@ def get_attendance(request):
     except Exception as e:
         return None
 
+@login_required
+def get_student_attendance_data(request):
+    """
+    Endpoint to get the comprehensive attendance data for a student
+    """
+    # Get the student ID from the request
+    student_id = request.GET.get('student_id')
+    
+    try:
+        # Get the student object
+        student = Student.objects.get(admin_id=student_id)
+        
+        # Get all subjects for this student's course
+        subjects = Subject.objects.filter(course_id=student.course.id)
+        
+        # Initialize counters and data structures
+        total_attendance = 0
+        total_present = 0
+        subjects_data = []
+        present_data = []
+        absent_data = []
+        
+        # For each subject, calculate attendance statistics
+        for subject in subjects:
+            # Get attendance objects for this subject
+            attendances = Attendance.objects.filter(subject_id=subject.id)
+            
+            subject_present = 0
+            subject_absent = 0
+            
+            # Count present and absent for each attendance date
+            for attendance in attendances:
+                # Check if there's an attendance report for this student
+                attendance_report = AttendanceReport.objects.filter(
+                    attendance_id=attendance.id,
+                    student_id=student.id
+                ).first()
+                
+                if attendance_report:
+                    total_attendance += 1
+                    if attendance_report.status:  # If student was present
+                        subject_present += 1
+                        total_present += 1
+                    else:
+                        subject_absent += 1
+            
+            # Add data to our arrays
+            subjects_data.append(subject.name)
+            present_data.append(subject_present)
+            absent_data.append(subject_absent)
+        
+        # Calculate percentages
+        percent_present = round((total_present / total_attendance) * 100) if total_attendance > 0 else 0
+        percent_absent = 100 - percent_present
+        
+        # Get recent attendance records (last 10)
+        recent_attendance = []
+        attendance_reports = AttendanceReport.objects.filter(
+            student_id=student.id
+        ).order_by('-attendance__created_at')[:10]
+        
+        for report in attendance_reports:
+            recent_attendance.append({
+                'date': report.attendance.created_at.strftime('%Y-%m-%d'),
+                'subject': report.attendance.subject.name,
+                'status': report.status
+            })
+        
+        # Prepare the response data
+        data = {
+            'status': 'success',
+            'percent_present': percent_present,
+            'percent_absent': percent_absent,
+            'subjects': subjects_data,
+            'present_data': present_data,
+            'absent_data': absent_data,
+            'recent_attendance': recent_attendance
+        }
+        
+        return JsonResponse(json.dumps(data), safe=False)
+    
+    except Student.DoesNotExist:
+        return JsonResponse(json.dumps({
+            'status': 'error',
+            'message': 'Student not found'
+        }), safe=False)
+    except Exception as e:
+        return JsonResponse(json.dumps({
+            'status': 'error',
+            'message': str(e)
+        }), safe=False)
 
+@login_required
+def get_recent_attendance(request):
+    """
+    Endpoint to get only the recent attendance records for a student
+    """
+    # Get the student ID from the request
+    student_id = request.GET.get('student_id')
+    
+    try:
+        # Get the student object
+        student = Student.objects.get(admin_id=student_id)
+        
+        # Get recent attendance records (last 10)
+        recent_attendance = []
+        attendance_reports = AttendanceReport.objects.filter(
+            student_id=student.id
+        ).order_by('-attendance__created_at')[:10]
+        
+        for report in attendance_reports:
+            recent_attendance.append({
+                'date': report.attendance.created_at.strftime('%Y-%m-%d'),
+                'subject': report.attendance.subject.name,
+                'status': report.status
+            })
+        
+        # Prepare the response data
+        data = {
+            'status': 'success',
+            'recent_attendance': recent_attendance
+        }
+        
+        return JsonResponse(json.dumps(data), safe=False)
+    
+    except Student.DoesNotExist:
+        return JsonResponse(json.dumps({
+            'status': 'error',
+            'message': 'Student not found'
+        }), safe=False)
+    except Exception as e:
+        return JsonResponse(json.dumps({
+            'status': 'error',
+            'message': str(e)
+        }), safe=False)
 @csrf_exempt
 def save_attendance_data(request):
     if request.method == 'POST':

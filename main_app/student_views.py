@@ -58,39 +58,51 @@ def student_home(request):
     return render(request, 'student_template/home_content.html', context)
 
 
-@ csrf_exempt
+@csrf_exempt
 def student_view_attendance(request):
+    # Get student data associated with the current user
     student = get_object_or_404(Student, admin=request.user)
+    
     if request.method != 'POST':
-        course = get_object_or_404(Course, id=student.course.id)
+        # GET request - show the attendance view form
+        course = get_object_or_404(Course, id=student.course.id) 
+        # Pass the student object to the template context to display session info
         context = {
             'subjects': Subject.objects.filter(course=course),
+            'student': student.admin,  # This gives access to admin fields (first_name, last_name, etc.)
             'page_title': 'View Attendance'
         }
         return render(request, 'student_template/student_view_attendance.html', context)
     else:
+        # POST request - fetch attendance data
         subject_id = request.POST.get('subject')
-        start = request.POST.get('start_date')
-        end = request.POST.get('end_date')
+        
         try:
             subject = get_object_or_404(Subject, id=subject_id)
-            start_date = datetime.strptime(start, "%Y-%m-%d")
-            end_date = datetime.strptime(end, "%Y-%m-%d")
-            attendance = Attendance.objects.filter(
-                date__range=(start_date, end_date), subject=subject)
+            
+            # Get all attendance objects for this subject
+            attendance_records = Attendance.objects.filter(subject=subject)
+            
+            # Get attendance reports for this student within the selected attendance records
             attendance_reports = AttendanceReport.objects.filter(
-                attendance__in=attendance, student=student)
+                attendance__in=attendance_records, student=student)
+            
+            # Format data for JSON response
             json_data = []
             for report in attendance_reports:
                 data = {
-                    "date":  str(report.attendance.date),
+                    "date": str(report.attendance.date),
                     "status": report.status
                 }
                 json_data.append(data)
+                
             return JsonResponse(json.dumps(json_data), safe=False)
+            
         except Exception as e:
-            return None
-
+            # Log the error for debugging
+            import logging
+            logging.error(f"Error in student_view_attendance: {str(e)}")
+            return JsonResponse({"error": str(e)}, status=500)
 
 def student_apply_leave(request):
     form = LeaveReportStudentForm(request.POST or None)
@@ -273,4 +285,6 @@ def student_qr_code(request):
     response = HttpResponse(content_type="image/png")
     canvas.save(response, "PNG")
     return response
+
+
 

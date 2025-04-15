@@ -40,17 +40,7 @@ def staff_home(request):
     return render(request, 'staff_template/home_content.html', context)
 
 
-def staff_take_attendance(request):
-    staff = get_object_or_404(Staff, admin=request.user)
-    subjects = Subject.objects.filter(staff_id=staff)
-    sessions = Session.objects.all()
-    context = {
-        'subjects': subjects,
-        'sessions': sessions,
-        'page_title': 'Take Attendance'
-    }
 
-    return render(request, 'staff_template/staff_take_attendance.html', context)
 
 
 @csrf_exempt
@@ -242,6 +232,25 @@ def get_students(request):
         return JsonResponse({
             'error': f'An error occurred: {str(e)}'
         }, status=500)
+def staff_get_student_session(request):
+    # Existing code to get student_id from request
+    student_id = request.POST.get('student_id')
+    
+    try:
+        # Find the student by student_code
+        student_model = get_object_or_404(Student, student_code=student_id)
+        user = student_model.user
+        
+        # Return student data including course and QR code information
+        return JsonResponse({
+            'name': f"{user.first_name} {user.last_name}",
+            'session': student_model.session.name,
+            'course': student_model.course.name,  # Add course information
+            'qr_code': str(user.qr_code) if user.qr_code else None,  # Add QR code path
+            'student_code': user.student_code  # Add student code
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
 
 @csrf_exempt
 def student_details(request):
@@ -349,9 +358,12 @@ def get_student_attendance(request):
         attendance_data = AttendanceReport.objects.filter(attendance=date)
         student_data = []
         for attendance in attendance_data:
-            data = {"id": attendance.student.admin.id,
-                    "name": attendance.student.admin.first_name + " " + attendance.student.admin.last_name,
-                    "status": attendance.status}
+            data = {
+                "id": attendance.id,  # This is the AttendanceReport ID
+                "student_id": attendance.student.id,  # Add the actual student ID
+                "name": attendance.student.admin.first_name + " " + attendance.student.admin.last_name,
+                "status": attendance.status
+            }
             student_data.append(data)
         return JsonResponse(json.dumps(student_data), content_type='application/json', safe=False)
     except Exception as e:
@@ -362,21 +374,88 @@ def get_student_attendance(request):
 def update_attendance(request):
     student_data = request.POST.get('student_ids')
     date = request.POST.get('date')
+    subject_id = request.POST.get('subject')
+    session_id = request.POST.get('session')
+    
     students = json.loads(student_data)
     try:
         attendance = get_object_or_404(Attendance, id=date)
-
+        subject = get_object_or_404(Subject, id=subject_id) if subject_id else attendance.subject
+        session = get_object_or_404(Session, id=session_id) if session_id else attendance.session
+        
         for student_dict in students:
-            student = get_object_or_404(
-                Student, admin_id=student_dict.get('id'))
-            attendance_report = get_object_or_404(AttendanceReport, student=student, attendance=attendance)
-            attendance_report.status = student_dict.get('status')
-            attendance_report.save()
+            student_id = student_dict.get('student_id')
+            record_id = student_dict.get('id')
+            status = student_dict.get('status')
+            is_new = student_dict.get('is_new', False)
+            
+            student = get_object_or_404(Student, id=student_id)
+            
+            if is_new or not record_id:
+                # Create new attendance record for this student
+                AttendanceReport.objects.create(
+                    student=student,
+                    attendance=attendance,
+                    status=status
+                )
+            else:
+                # Update existing attendance record
+                try:
+                    attendance_report = get_object_or_404(AttendanceReport, id=record_id)
+                    attendance_report.status = status
+                    attendance_report.save()
+                except Exception as e:
+                    print(f"Error updating attendance record {record_id}: {str(e)}")
+                    # If record not found by ID, try finding by student and attendance
+                    attendance_report, created = AttendanceReport.objects.get_or_create(
+                        student=student,
+                        attendance=attendance,
+                        defaults={"status": status}
+                    )
+                    if not created:
+                        attendance_report.status = status
+                        attendance_report.save()
     except Exception as e:
-        return None
+        print(f"Error in update_attendance: {str(e)}")
+        return JsonResponse({"error": str(e)}, status=500)
 
     return HttpResponse("OK")
 
+@csrf_exempt
+def get_enrolled_students(request):
+    subject_id = request.POST.get('subject')
+    session_id = request.POST.get('session')
+    
+    if not subject_id or not session_id:
+        return JsonResponse({
+            'error': 'Both subject and session are required'
+        }, status=400)
+    
+    try:
+        subject = get_object_or_404(Subject, id=subject_id)
+        session = get_object_or_404(Session, id=session_id)
+        
+        # Get all students enrolled in this course and session
+        students = Student.objects.filter(
+            course_id=subject.course.id,
+            session=session
+        ).select_related('admin')
+        
+        student_data = []
+        for student in students:
+            data = {
+                "id": student.id,
+                "name": f"{student.admin.first_name} {student.admin.last_name}"
+            }
+            student_data.append(data)
+        
+        return JsonResponse(student_data, safe=False)
+    
+    except Exception as e:
+        print(f"Error in get_enrolled_students: {str(e)}")
+        return JsonResponse({
+            'error': f'An error occurred: {str(e)}'
+        }, status=500)
 
 def staff_apply_leave(request):
     form = LeaveReportStaffForm(request.POST or None)
