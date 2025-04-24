@@ -351,33 +351,6 @@
                     </a>
                 </li>
 
-                <li class="nav-item has-treeview" id="results-menu">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-chart-pie"></i>
-                        <p>
-                            Results
-                            <i class="fas fa-angle-left right"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            {% url 'staff_add_result' as add_result %}
-                            <a href="{{ add_result }}" class="nav-link {% if request.path == add_result %} active {% endif %}" id="add-result-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Add Result</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            {% url 'edit_student_result' as manage_result %}
-                            {% url 'edit_student_result' result_id as edit_result %}
-                            <a href="{{ manage_result }}" class="nav-link {% if request.path == manage_result or request.path == edit_result %} active {% endif %}" id="edit-result-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Edit Result</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                
                 <li class="nav-item has-treeview {% if request.path == staff_take_attendance_by_barcode or request.path == staff_update_attendance %} menu-open {% endif %}">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-calendar-alt"></i>
@@ -397,11 +370,11 @@
                             </a>
                         </li>
                 
-                        <!-- View/Update Attendance -->
+                        <!-- View Attendance -->
                         <li class="nav-item">
-                            {% url 'staff_update_attendance' as staff_update_attendance %}
-                            <a href="{{ staff_update_attendance }}" 
-                               class="nav-link {% if request.path == staff_update_attendance %} active {% endif %}">
+                            {% url 'staff_view_attendance' as staff_view_attendance %}
+                            <a href="{{ staff_view_attendance }}" 
+                               class="nav-link {% if request.path == staff_view_attendance %} active {% endif %}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>View Attendance</p>
                             </a>

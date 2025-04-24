@@ -39,16 +39,14 @@ def staff_home(request):
     }
     return render(request, 'staff_template/home_content.html', context)
 
-
-
-
-
 @csrf_exempt
 def staff_take_attendance_by_qr(request):
     if request.method == 'POST':
         student_id = request.POST.get('student_id')
         subject_id = request.POST.get('subject_id')
         attendance_date = request.POST.get('attendance_date')
+        # Get attendance status if provided, default to present (True) if not provided
+        attendance_status = request.POST.get('attendance_status', 'True') == 'True'
         
         if not all([student_id, subject_id, attendance_date]):
             missing = []
@@ -103,6 +101,15 @@ def staff_take_attendance_by_qr(request):
                 
                 # Check if attendance already exists for this student on this date
                 attendance_date_obj = datetime.strptime(attendance_date, '%Y-%m-%d').date()
+                
+                # Verify that the attendance date falls within the student's session period
+                if not (student.session.start_year <= attendance_date_obj <= student.session.end_year):
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Attendance date is outside the student session period',
+                        'details': f'Session period: {student.session.start_year.strftime("%Y-%m-%d")} to {student.session.end_year.strftime("%Y-%m-%d")}'
+                    })
+                
                 existing_attendance = Attendance.objects.filter(
                     subject=subject,
                     date=attendance_date_obj
@@ -130,7 +137,7 @@ def staff_take_attendance_by_qr(request):
                 attendance_report = AttendanceReport.objects.create(
                     student=student,
                     attendance=existing_attendance,
-                    status=True
+                    status=attendance_status
                 )
                 
                 # Store the last successful attendance in session
@@ -138,6 +145,7 @@ def staff_take_attendance_by_qr(request):
                     'student_name': f"{student.admin.first_name} {student.admin.last_name}",
                     'subject': subject.name,
                     'date': attendance_date,
+                    'status': 'Present' if attendance_status else 'Absent',
                     'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
                 
@@ -146,7 +154,8 @@ def staff_take_attendance_by_qr(request):
                     'status': 'success',
                     'message': 'Attendance recorded successfully',
                     'student_name': f"{student.admin.first_name} {student.admin.last_name}",
-                    'session': session_str
+                    'session': session_str,
+                    'attendance_status': 'Present' if attendance_status else 'Absent'
                 })
                 
             except ValueError as e:
@@ -232,123 +241,18 @@ def get_students(request):
         return JsonResponse({
             'error': f'An error occurred: {str(e)}'
         }, status=500)
-def staff_get_student_session(request):
-    # Existing code to get student_id from request
-    student_id = request.POST.get('student_id')
     
-    try:
-        # Find the student by student_code
-        student_model = get_object_or_404(Student, student_code=student_id)
-        user = student_model.user
-        
-        # Return student data including course and QR code information
-        return JsonResponse({
-            'name': f"{user.first_name} {user.last_name}",
-            'session': student_model.session.name,
-            'course': student_model.course.name,  # Add course information
-            'qr_code': str(user.qr_code) if user.qr_code else None,  # Add QR code path
-            'student_code': user.student_code  # Add student code
-        })
-    except Exception as e:
-        return JsonResponse({'error': str(e)})
-
-@csrf_exempt
-def student_details(request):
-    student_id = request.POST.get('student_id')
-    if not student_id:
-        return JsonResponse({'error': 'Student ID is required'}, status=400)
-
-    try:
-        # Try to find student by student_code first
-        try:
-            student = Student.objects.select_related('admin', 'session_year').get(admin__student_code=student_id)
-        except Student.DoesNotExist:
-            # If not found by student_code, try finding by ID
-            try:
-                student = Student.objects.select_related('admin', 'session_year').get(admin__id=student_id)
-            except Student.DoesNotExist:
-                return JsonResponse({'error': 'Student not found'}, status=404)
-
-        return JsonResponse({
-            'id': student.admin.id,
-            'name': f"{student.admin.first_name} {student.admin.last_name}",
-            'session': f"{student.session_year.session_start_year} - {student.session_year.session_end_year}"
-        })
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-
-
-@csrf_exempt
-def save_attendance(request):
-    student_data = request.POST.get('student_ids')
-    date = request.POST.get('date')
-    subject_id = request.POST.get('subject')
-    session_id = request.POST.get('session')
-    students = json.loads(student_data)
-    try:
-        session = get_object_or_404(Session, id=session_id)
-        subject = get_object_or_404(Subject, id=subject_id)
-        
-        # Convert date string to date object
-        attendance_date = datetime.strptime(date, '%Y-%m-%d').date()
-        
-        attendance = Attendance(session=session, subject=subject, date=date)
-        attendance.save()
-
-        for student_dict in students:
-            student = get_object_or_404(Student, id=student_dict.get('id'))
-            attendance_report = AttendanceReport(student=student, attendance=attendance, status=student_dict.get('status'))
-            attendance_report.save()
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)})
-
-    return HttpResponse("OK")
-
-@csrf_exempt
-def save_attendance_qr(request):
-    try:
-        student_id = request.POST.get('student_id')
-        date = request.POST.get('date')
-        subject_id = request.POST.get('subject')
-        session_id = request.POST.get('session')
-
-        if not all([student_id, date, subject_id, session_id]):
-            return JsonResponse({"error": "Missing required parameters"}, status=400)
-
-        session = get_object_or_404(Session, id=session_id)
-        subject = get_object_or_404(Subject, id=subject_id)
-        student = get_object_or_404(Student, admin_id=student_id, course_id=subject.course.id, session_id=session_id)
-
-        # Convert date string to date object
-        attendance_date = datetime.strptime(date, '%Y-%m-%d').date()
-        
-        # Validate that the attendance date is within the session dates
-        if not (session.start_year <= attendance_date <= session.end_year):
-            return JsonResponse({"error": "Attendance date is out of session range"}, status=400)
-
-        attendance, created = Attendance.objects.get_or_create(session=session, subject=subject, date=date)
-
-        attendance_report, created = AttendanceReport.objects.get_or_create(
-            student=student, attendance=attendance, defaults={"status": 1}
-        )
-
-        return JsonResponse({"message": "Attendance recorded successfully"}, status=200)
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=400)
-
-def staff_update_attendance(request):
+def staff_view_attendance(request):
     staff = get_object_or_404(Staff, admin=request.user)
     subjects = Subject.objects.filter(staff_id=staff)
     sessions = Session.objects.all()
     context = {
         'subjects': subjects,
         'sessions': sessions,
-        'page_title': 'Update Attendance'
+        'page_title': 'view Attendance'
     }
 
-    return render(request, 'staff_template/staff_update_attendance.html', context)
-
+    return render(request, 'staff_template/staff_view_attendance.html', context)
 
 @csrf_exempt
 def get_student_attendance(request):
@@ -368,58 +272,6 @@ def get_student_attendance(request):
         return JsonResponse(json.dumps(student_data), content_type='application/json', safe=False)
     except Exception as e:
         return e
-
-
-@csrf_exempt
-def update_attendance(request):
-    student_data = request.POST.get('student_ids')
-    date = request.POST.get('date')
-    subject_id = request.POST.get('subject')
-    session_id = request.POST.get('session')
-    
-    students = json.loads(student_data)
-    try:
-        attendance = get_object_or_404(Attendance, id=date)
-        subject = get_object_or_404(Subject, id=subject_id) if subject_id else attendance.subject
-        session = get_object_or_404(Session, id=session_id) if session_id else attendance.session
-        
-        for student_dict in students:
-            student_id = student_dict.get('student_id')
-            record_id = student_dict.get('id')
-            status = student_dict.get('status')
-            is_new = student_dict.get('is_new', False)
-            
-            student = get_object_or_404(Student, id=student_id)
-            
-            if is_new or not record_id:
-                # Create new attendance record for this student
-                AttendanceReport.objects.create(
-                    student=student,
-                    attendance=attendance,
-                    status=status
-                )
-            else:
-                # Update existing attendance record
-                try:
-                    attendance_report = get_object_or_404(AttendanceReport, id=record_id)
-                    attendance_report.status = status
-                    attendance_report.save()
-                except Exception as e:
-                    print(f"Error updating attendance record {record_id}: {str(e)}")
-                    # If record not found by ID, try finding by student and attendance
-                    attendance_report, created = AttendanceReport.objects.get_or_create(
-                        student=student,
-                        attendance=attendance,
-                        defaults={"status": status}
-                    )
-                    if not created:
-                        attendance_report.status = status
-                        attendance_report.save()
-    except Exception as e:
-        print(f"Error in update_attendance: {str(e)}")
-        return JsonResponse({"error": str(e)}, status=500)
-
-    return HttpResponse("OK")
 
 @csrf_exempt
 def get_enrolled_students(request):
@@ -566,57 +418,8 @@ def staff_view_notification(request):
     return render(request, "staff_template/staff_view_notification.html", context)
 
 
-def staff_add_result(request):
-    staff = get_object_or_404(Staff, admin=request.user)
-    subjects = Subject.objects.filter(staff=staff)
-    sessions = Session.objects.all()
-    context = {
-        'page_title': 'Result Upload',
-        'subjects': subjects,
-        'sessions': sessions
-    }
-    if request.method == 'POST':
-        try:
-            student_id = request.POST.get('student_list')
-            subject_id = request.POST.get('subject')
-            test = request.POST.get('test')
-            exam = request.POST.get('exam')
-            student = get_object_or_404(Student, id=student_id)
-            subject = get_object_or_404(Subject, id=subject_id)
-            try:
-                data = StudentResult.objects.get(
-                    student=student, subject=subject)
-                data.exam = exam
-                data.test = test
-                data.save()
-                messages.success(request, "Scores Updated")
-            except:
-                result = StudentResult(student=student, subject=subject, test=test, exam=exam)
-                result.save()
-                messages.success(request, "Scores Saved")
-        except Exception as e:
-            messages.warning(request, "Error Occured While Processing Form")
-    return render(request, "staff_template/staff_add_result.html", context)
-
-
 @csrf_exempt
-def fetch_student_result(request):
-    try:
-        subject_id = request.POST.get('subject')
-        student_id = request.POST.get('student')
-        student = get_object_or_404(Student, id=student_id)
-        subject = get_object_or_404(Subject, id=subject_id)
-        result = StudentResult.objects.get(student=student, subject=subject)
-        result_data = {
-            'exam': result.exam,
-            'test': result.test
-        }
-        return HttpResponse(json.dumps(result_data))
-    except Exception as e:
-        return HttpResponse('False')
-
-@csrf_exempt
-def staff_get_student_session(request):
+def get_student_information(request):
     if request.method != "POST":
         return HttpResponse("Method Not Allowed", status=405)
     
@@ -625,7 +428,7 @@ def staff_get_student_session(request):
     
     if not student_id:
         return JsonResponse({'error': 'Student ID is required'}, status=400)
-
+    
     try:
         # Try to find student by student_code first
         student = None
@@ -637,7 +440,6 @@ def staff_get_student_session(request):
                 'course'
             ).get(admin__student_code=student_id)
             print(f"[DEBUG] Found student by code: {student.admin.first_name} {student.admin.last_name}")
-
         except Student.DoesNotExist:
             # If not found by student_code, try finding by ID
             try:
@@ -646,7 +448,6 @@ def staff_get_student_session(request):
                     'admin', 
                     'session',
                     'course'
-                    
                 ).get(id=student_id)
                 print(f"[DEBUG] Found student by ID: {student.admin.first_name} {student.admin.last_name}")
             except (Student.DoesNotExist, ValueError):
@@ -655,13 +456,13 @@ def staff_get_student_session(request):
                     'error': 'Student not found',
                     'details': 'No student found with the provided ID or code. Please verify the ID and try again.'
                 }, status=404)
-
+                
         if not student:
             return JsonResponse({
                 'error': 'Student not found',
                 'details': 'Unable to locate student record.'
             }, status=404)
-
+            
         # Get student details
         if not student.session:
             print(f"[DEBUG] No session found for student: {student.admin.first_name} {student.admin.last_name}")
@@ -676,19 +477,72 @@ def staff_get_student_session(request):
                     'error': 'No session assigned',
                     'details': 'This student does not have a session assigned.'
                 }, status=400)
-
+                
         session_str = student.session.start_year.strftime('%Y-%m-%d') + " to " + student.session.end_year.strftime('%Y-%m-%d')
+        
+        # Get profile picture URL
+        profile_pic_url = None
+        if hasattr(student.admin, 'profile_pic') and student.admin.profile_pic:
+            profile_pic_url = student.admin.profile_pic.url
+            
+        # Get the current staff member
+        staff = Staff.objects.get(admin=request.user)
+        
+        # Get subjects that this student can attend and are taught by the current staff
+        registered_subjects = []
+        
+        # Try to find subjects through the StudentSubject model if it exists
+        try:
+            # Check if the StudentSubject model is being used for subject registration
+            student_subjects = StudentSubject.objects.filter(student=student)
+            if student_subjects.exists():
+                # Filter for subjects taught by this staff member
+                for subject_entry in student_subjects:
+                    if subject_entry.subject.staff_id == staff.id:
+                        registered_subjects.append({
+                            'id': subject_entry.subject.id,
+                            'name': subject_entry.subject.name
+                        })
+        except:
+            # If StudentSubject model doesn't exist or no records found, we'll continue below
+            pass
+            
+        # If no registered subjects found through StudentSubject model,
+        # find all subjects in the student's course taught by this staff member
+        if not registered_subjects:
+            course_subjects = Subject.objects.filter(
+                course=student.course,
+                staff=staff
+            )
+            for subject in course_subjects:
+                registered_subjects.append({
+                    'id': subject.id,
+                    'name': subject.name
+                })
+        
+        # Additional student information from manage_student.html
         student_data = {
             'name': f"{student.admin.first_name} {student.admin.last_name}",
+            'first_name': student.admin.first_name,
+            'last_name': student.admin.last_name,
+            'email': student.admin.email,
+            'gender': student.admin.gender,
             'session': session_str,
+            'session_start_date': student.session.start_year.strftime('%Y-%m-%d'),
+            'session_end_date': student.session.end_year.strftime('%Y-%m-%d'),
             'course': student.course.name if student.course else None,
-            'session_id': student.session.id if student.session else None
+            'session_id': student.session.id if student.session else None,
+            'session_years': f"{student.session.start_year.year} - {student.session.end_year.year}" if student.session else None,
+            'student_code': student.admin.student_code if hasattr(student.admin, 'student_code') else None,
+            'qr_code': student.admin.qr_code.url.replace('/media/', '') if hasattr(student.admin, 'qr_code') and student.admin.qr_code else None,
+            'profile_pic': profile_pic_url.replace('/media/', '') if profile_pic_url else None,  # Add profile picture URL
+            'registered_subjects': registered_subjects  # Add the registered subjects data
         }
+        
         print(f"[DEBUG] Returning student data: {student_data}")
         return JsonResponse(student_data)
-
     except Exception as e:
-        print(f"[DEBUG] Error in staff_get_student_session: {str(e)}")
+        print(f"[DEBUG] Error in get_student_information: {str(e)}")
         import traceback
         print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
         return JsonResponse({
@@ -696,7 +550,313 @@ def staff_get_student_session(request):
             'details': str(e)
         }, status=500)
 
+@csrf_exempt
+def get_recent_attendance_records(request):
+    """
+    Get recent attendance records for staff dashboard with precise timestamps
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+    try:
+        # Get the staff member
+        staff = Staff.objects.get(admin=request.user)
+        
+        # Get subjects taught by this staff
+        subjects = Subject.objects.filter(staff=staff)
+        
+        # Get recent attendance reports for these subjects (limit to 20)
+        attendance_records = Attendance.objects.filter(
+            subject__in=subjects
+        ).order_by('-created_at')[:20]
+        
+        records = []
+        for attendance in attendance_records:
+            # Get all reports for this attendance record
+            reports = AttendanceReport.objects.filter(attendance=attendance)
+            
+            # Count present and absent students
+            present_count = reports.filter(status=True).count()
+            absent_count = reports.filter(status=False).count()
+            total_count = present_count + absent_count
+            
+            if total_count > 0:
+                present_percentage = round((present_count / total_count) * 100)
+            else:
+                present_percentage = 0
+                
+            # Format the created_at timestamp with minutes and seconds
+            created_at = attendance.created_at
+            time_str = created_at.strftime('%Y-%m-%d %H:%M:%S')
+            
+            # Calculate how long ago the record was created
+            now = timezone.now()
+            time_diff = now - created_at
+            
+            # Format time difference in a human-readable way
+            if time_diff.days > 0:
+                time_ago = f"{time_diff.days} day{'s' if time_diff.days > 1 else ''} ago"
+            elif time_diff.seconds // 3600 > 0:
+                hours = time_diff.seconds // 3600
+                time_ago = f"{hours} hour{'s' if hours > 1 else ''} ago"
+            elif time_diff.seconds // 60 > 0:
+                minutes = time_diff.seconds // 60
+                time_ago = f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+            else:
+                time_ago = f"{time_diff.seconds} second{'s' if time_diff.seconds != 1 else ''} ago"
+            
+            # Get student details for this attendance record
+            student_details = []
+            for report in reports:
+                student = report.student
+                student_details.append({
+                    'id': student.id,
+                    'name': f"{student.admin.first_name} {student.admin.last_name}",
+                    'status': report.status
+                })
+                
+            records.append({
+                'id': attendance.id,
+                'subject': attendance.subject.name,
+                'date': attendance.date.strftime('%Y-%m-%d'),
+                'created_at': time_str,
+                'time_ago': time_ago,
+                'present_count': present_count,
+                'absent_count': absent_count,
+                'total_count': total_count,
+                'present_percentage': present_percentage,
+                'students': student_details
+            })
+        
+        return JsonResponse({'status': 'success', 'records': records})
+    
+    except Exception as e:
+        import traceback
+        print(f"Error in get_recent_attendance_records: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({
+            'status': 'error',
+            'message': f'An error occurred: {str(e)}'
+        })
 
+@csrf_exempt
+def export_attendance_to_excel(request):
+    """
+    Export attendance data to Excel for staff members
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+    try:
+        # Get the staff member
+        staff = Staff.objects.get(admin=request.user)
+        
+        # Get parameters from request
+        subject_id = request.POST.get('subject_id')
+        session_id = request.POST.get('session_id')
+        
+        if not subject_id or not session_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Subject and session are required'
+            })
+        
+        # Get the subject and session
+        subject = get_object_or_404(Subject, id=subject_id)
+        session = get_object_or_404(Session, id=session_id)
+        
+        # Verify that the subject belongs to this staff
+        if subject.staff_id != staff.id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'You are not authorized to access this subject'
+            })
+        
+        # Get all students in this course and session
+        students = Student.objects.filter(
+            course=subject.course,
+            session=session
+        ).select_related('admin')
+        
+        # Get all attendance records for this subject and session
+        attendance_records = Attendance.objects.filter(
+            subject=subject,
+            session=session
+        ).order_by('date')
+        
+        # Create a new workbook
+        import openpyxl
+        from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+        from openpyxl.utils import get_column_letter
+        from io import BytesIO
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"{subject.name} Attendance"
+        
+        # Define styles
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="344054", end_color="344054", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        
+        present_fill = PatternFill(start_color="DDFFDD", end_color="DDFFDD", fill_type="solid")
+        absent_fill = PatternFill(start_color="FFDDDD", end_color="FFDDDD", fill_type="solid")
+        
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Add title
+        ws.merge_cells('A1:E1')
+        title_cell = ws['A1']
+        title_cell.value = f"Attendance Report - {subject.name} ({session})"
+        title_cell.font = Font(bold=True, size=14)
+        title_cell.alignment = Alignment(horizontal="center")
+        
+        # Add metadata
+        ws['A2'] = "Course:"
+        ws['B2'] = subject.course.name
+        ws['A3'] = "Subject:"
+        ws['B3'] = subject.name
+        ws['A4'] = "Session:"
+        ws['B4'] = str(session)
+        ws['A5'] = "Staff:"
+        ws['B5'] = f"{staff.admin.first_name} {staff.admin.last_name}"
+        ws['A6'] = "Generated on:"
+        ws['B6'] = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Style metadata
+        for row in range(2, 7):
+            ws[f'A{row}'].font = Font(bold=True)
+        
+        # Add header row for attendance dates
+        start_row = 8
+        ws.cell(row=start_row, column=1, value="No.").font = header_font
+        ws.cell(row=start_row, column=1).fill = header_fill
+        ws.cell(row=start_row, column=1).alignment = header_alignment
+        
+        ws.cell(row=start_row, column=2, value="Student Name").font = header_font
+        ws.cell(row=start_row, column=2).fill = header_fill
+        ws.cell(row=start_row, column=2).alignment = header_alignment
+        
+        # Add attendance dates in header
+        col_index = 3
+        for attendance in attendance_records:
+            date_formatted = attendance.date.strftime("%b %d, %Y")
+            ws.cell(row=start_row, column=col_index, value=date_formatted).font = header_font
+            ws.cell(row=start_row, column=col_index).fill = header_fill
+            ws.cell(row=start_row, column=col_index).alignment = header_alignment
+            col_index += 1
+        
+        # Add "Present" and "Absent" summary columns
+        ws.cell(row=start_row, column=col_index, value="Present").font = header_font
+        ws.cell(row=start_row, column=col_index).fill = header_fill
+        ws.cell(row=start_row, column=col_index).alignment = header_alignment
+        
+        ws.cell(row=start_row, column=col_index+1, value="Absent").font = header_font
+        ws.cell(row=start_row, column=col_index+1).fill = header_fill
+        ws.cell(row=start_row, column=col_index+1).alignment = header_alignment
+        
+        ws.cell(row=start_row, column=col_index+2, value="Percentage").font = header_font
+        ws.cell(row=start_row, column=col_index+2).fill = header_fill
+        ws.cell(row=start_row, column=col_index+2).alignment = header_alignment
+        
+        # Add student data rows
+        row_index = start_row + 1
+        student_num = 1
+        
+        for student in students:
+            # Add student name
+            ws.cell(row=row_index, column=1, value=student_num)
+            ws.cell(row=row_index, column=2, value=f"{student.admin.first_name} {student.admin.last_name}")
             
+            # Add attendance status for each date
+            col_index = 3
+            present_count = 0
+            absent_count = 0
             
-           
+            for attendance in attendance_records:
+                # Check if there's a report for this student
+                try:
+                    report = AttendanceReport.objects.get(
+                        student=student,
+                        attendance=attendance
+                    )
+                    if report.status:  # Present
+                        status = "P"
+                        present_count += 1
+                        ws.cell(row=row_index, column=col_index).fill = present_fill
+                    else:  # Absent
+                        status = "A"
+                        absent_count += 1
+                        ws.cell(row=row_index, column=col_index).fill = absent_fill
+                except AttendanceReport.DoesNotExist:
+                    status = "A"  # Default to absent if no record
+                    absent_count += 1
+                    ws.cell(row=row_index, column=col_index).fill = absent_fill
+                
+                ws.cell(row=row_index, column=col_index, value=status)
+                ws.cell(row=row_index, column=col_index).alignment = Alignment(horizontal="center")
+                col_index += 1
+            
+            # Add summary columns
+            total_days = present_count + absent_count
+            percentage = round((present_count / total_days) * 100) if total_days > 0 else 0
+            
+            ws.cell(row=row_index, column=col_index, value=present_count)
+            ws.cell(row=row_index, column=col_index).alignment = Alignment(horizontal="center")
+            
+            ws.cell(row=row_index, column=col_index+1, value=absent_count)
+            ws.cell(row=row_index, column=col_index+1).alignment = Alignment(horizontal="center")
+            
+            ws.cell(row=row_index, column=col_index+2, value=f"{percentage}%")
+            ws.cell(row=row_index, column=col_index+2).alignment = Alignment(horizontal="center")
+            
+            row_index += 1
+            student_num += 1
+        
+        # Add borders to all cells
+        for row in ws.iter_rows(min_row=start_row, max_row=row_index-1, 
+                              min_col=1, max_col=col_index+2):
+            for cell in row:
+                cell.border = border
+        
+        # Adjust column widths
+        for col in range(1, col_index+3):
+            column_letter = get_column_letter(col)
+            if col == 2:  # Student name column
+                ws.column_dimensions[column_letter].width = 25
+            else:
+                ws.column_dimensions[column_letter].width = 12
+        
+        # Freeze panes to make the header row and student names stay visible
+        ws.freeze_panes = 'C9'
+        
+        # Save workbook to BytesIO object
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        # Generate filename
+        filename = f"{subject.name}_{session}_attendance_report.xlsx"
+        
+        # Prepare response
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+    
+    except Exception as e:
+        import traceback
+        print(f"Error in export_attendance_to_excel: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({
+            'status': 'error',
+            'message': f'An error occurred: {str(e)}'
+        })

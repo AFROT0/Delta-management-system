@@ -3,202 +3,74 @@
 {% block page_title %}Take Attendance by QR Code{% endblock page_title %}
 
 {% block custom_css %}
+<link rel="stylesheet" href="{% static 'dist/css/student-table.css' %}">
 <style>
-    /* Base card */
-    .attendance-card {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        padding: 2rem;
-        margin-bottom: 2rem;
+    /* Attendance Status Styles */
+    .status-options {
+        display: flex;
+        margin-top: 10px;
     }
-
-    /* Form controls */
-    .form-control {
-        border-radius: 8px;
-        border: 1px solid #c0c0c0;
-        padding: 0.5rem 0.75rem;
-        line-height: 1.2;
-        background: white;
-        color: #333333;
-        font-size: 16px;
-        font-weight: 400;
-    }
-
-    .form-control::placeholder {
-        color: #757575;
-        opacity: 1;
-    }
-
-    /* Form labels */
-    label {
-        color: #000000 !important;
-        font-weight: 500;
-        font-size: 14px;
-        margin-bottom: 0.5rem;
-        display: block;
-    }
-
-    /* Specific label styles */
-    label[for="student_id"] {
-        color: #000000 !important;
+    
+    .custom-control-input:checked ~ .custom-control-label[for="status_present"] {
+        color: #28a745;
         font-weight: 500;
     }
-
-    /* Select dropdown specific styles */
-    select.form-control {
+    
+    .custom-control-input:checked ~ .custom-control-label[for="status_absent"] {
+        color: #dc3545;
+        font-weight: 500;
+    }
+    
+    .custom-control-label {
+        padding: 3px 0;
         cursor: pointer;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23424242' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 1em;
-        padding-right: 2.5rem;
+        transition: all 0.2s ease;
     }
-
-    /* Read-only inputs */
-    .form-control[readonly] {
-        background-color: #f5f5f5;
-        color: #424242;
-        border-color: #e0e0e0;
+    
+    .custom-control-label:hover {
+        opacity: 0.8;
     }
-
-    /* Button styles */
+    
+    .custom-control-input:checked ~ .custom-control-label::before {
+        border-color: #007bff;
+        background-color: #007bff;
+    }
+    
     .btn-take-attendance {
-        background: #4caf50;
+        margin-top: 20px;
+        background-color: #17a2b8;
         color: white;
-        border-radius: 8px;
-        padding: 1rem 2rem;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        border: none;
-        width: 100%;
+        padding: 10px 20px;
+        transition: all 0.3s ease;
     }
-
-    .btn-take-attendance:disabled {
-        background: #9e9e9e;
-        cursor: not-allowed;
+    
+    .btn-take-attendance:hover {
+        background-color: #138496;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-
-    /* Student info card */
-    .student-info {
-        display: none;
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin-top: 1rem;
+    
+    /* Auto-selected subject styles */
+    .form-control-static {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 8px 12px !important;
+        border: 1px solid #e9ecef;
     }
-
-    .student-info .form-group label {
-        color: #000000 !important;
-        font-weight: 500;
-        font-size: 1.2em;
-        margin-bottom: 0.5rem;
+    
+    .auto-selected-text {
+        color: #28a745;
+        font-size: 0.85rem;
+        font-style: italic;
+        margin-left: 5px;
     }
-
-    .student-info .form-control[readonly] {
-        background-color: transparent !important;
-        border: none !important;
-        color: #000000 !important;
-        font-size: 1.1em;
-        padding: 0.5rem 0;
-        box-shadow: none !important;
-        cursor: default;
-    }
-
-    .student-info.active {
+    
+    .subject-info-note {
+        color: #17a2b8;
+        font-size: 0.85rem;
+        margin-top: 5px;
         display: block;
-        animation: fadeIn 0.3s ease;
-    }
-
-    /* QR code display */
-    .qr-code-container {
-        text-align: center;
-        margin-top: 1rem;
-    }
-
-    .qr-code-image {
-        width: 100px;
-        height: 100px;
-        object-fit: contain;
-    }
-
-    .student-id-code {
-        font-weight: bold;
-        margin-top: 0.5rem;
-    }
-
-    /* Message boxes styles */
-    .success-message, .error-message, .warning-message {
-        display: none;
-        padding: 1rem;
-        border-radius: 8px;
-        margin-top: 1rem;
-        font-weight: 500;
-    }
-
-    .success-message {
-        background-color: #e8f5e9;
-        color: #2e7d32;
-        border: 1px solid #a5d6a7;
-    }
-
-    .error-message {
-        background-color: #ffebee;
-        color: #c62828;
-        border: 1px solid #ef9a9a;
-    }
-
-    .warning-message {
-        background-color: #fff8e1;
-        color: #f57f17;
-        border: 1px solid #ffe082;
-    }
-
-    .success-message i, .error-message i, .warning-message i {
-        margin-right: 0.5rem;
-    }
-
-    .success-message.show, .error-message.show, .warning-message.show {
-        display: block;
-        animation: slideIn 0.3s ease;
-    }
-
-    /* Course compatibility indicator */
-    .course-compatibility {
-        margin-top: 0.5rem;
-        padding: 0.5rem;
-        border-radius: 6px;
-        font-weight: 500;
-        text-align: center;
-    }
-
-    .course-compatible {
-        background-color: #e8f5e9;
-        color: #2e7d32;
-    }
-
-    .course-incompatible {
-        background-color: #ffebee;
-        color: #c62828;
-    }
-
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 {% endblock custom_css %}
@@ -214,69 +86,132 @@
                         <input type="hidden" name="student_id" id="attendance_student_id">
                         <input type="hidden" name="subject_id" id="attendance_subject_id">
                         <input type="hidden" name="attendance_date" value="{{ today|date:'Y-m-d' }}">
-                        <input type="hidden" name="attendance_status" id="attendance_status">
                         <input type="hidden" name="staff_course" id="staff_course" value="{{ request.user.staff.course.name }}">
+                        <!-- Hidden URL for student info endpoint -->
+                        <input type="hidden" id="studentInfoUrl" value="{% url 'staff_get_student_information' %}">
+                        
                         <div class="form-group">
                             <label for="student_id">Student ID / Code</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="student_id" id="student_id" placeholder="Enter student ID" required>
+                                <input type="text" class="form-control" name="student_id" id="student_id" placeholder="Enter student ID or scan QR code" required>
                             </div>
-                            <small class="form-text text-muted">scan qr / id to record attendance</small>
+                            <small class="form-text text-muted">Scan QR code or enter student ID to record attendance</small>
                         </div>
 
+                        <!-- New consolidated student info display -->
                         <div class="student-info" id="student_info">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Student Name</label>
-                                        <input type="text" class="form-control" id="student_name" readonly>
+                            <div class="student-consolidated-info">
+                                <!-- Left side - Photo and QR code -->
+                                <div class="student-info-left">
+                                    <!-- Student Photo -->
+                                    <div class="student-photo-container" id="student_photo_container">
+                                        <div class="student-photo-placeholder" id="student_photo_placeholder">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <img id="student_photo" class="student-photo" src="" alt="student photo">
+                                    </div>
+                                    
+                                    <!-- QR Code (shown directly in left column) -->
+                                    <div class="qr-info-section">
+                                        <div class="qr-code-container" id="qr_code_container">
+                                            <img id="qr_code_image" class="qr-code-image" src="" alt="QR Code">
+                                            <div id="student_code" class="student-id-code"></div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Session</label>
-                                        <input type="text" class="form-control" id="student_session" readonly>
-                                    </div>
+                                
+                                <!-- Right side - Student data table -->
+                                <div class="student-info-right">
+                                    <table class="student-data-table">
+                                        <tr>
+                                            <th colspan="2">Student Information</th>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Full Name</strong></td>
+                                            <td id="table_student_name">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Student ID</strong></td>
+                                            <td id="table_student_code">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Email</strong></td>
+                                            <td id="table_student_email">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Gender</strong></td>
+                                            <td id="table_student_gender">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Course</strong></td>
+                                            <td>
+                                                <span id="table_student_course">-</span>
+                                                <div class="course-compatibility" id="course_compatibility"></div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Session</strong></td>
+                                            <td id="table_student_session">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Academic Years</strong></td>
+                                            <td id="table_student_session_years">-</td>
+                                        </tr>
+                                    </table>
+                                    
+                                    <!-- Keep the original hidden inputs for form submission -->
+                                    <input type="hidden" id="student_name" value="">
+                                    <input type="hidden" id="student_email" value="">
+                                    <input type="hidden" id="student_gender" value="">
+                                    <input type="hidden" id="display_student_code" value="">
+                                    <input type="hidden" id="student_course" value="">
+                                    <input type="hidden" id="student_session" value="">
+                                    <input type="hidden" id="student_session_years" value="">
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Course</label>
-                                        <input type="text" class="form-control" id="student_course" readonly>
-                                    </div>
-                                    <div class="course-compatibility" id="course_compatibility"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="qr-code-container" id="qr_code_container">
-                                        <img id="qr_code_image" class="qr-code-image" src="" alt="QR Code">
-                                        <div id="student_code" class="student-id-code"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="attendance-details" id="attendance_details" style="display: none;">
-                            <div class="form-group">
-                                <label for="subject">Subject</label>
-                                <select class="form-control" name="subject" id="subject" required>
-                                    <option value="">Select Subject</option>
-                                    {% for subject in subjects %}
-                                    <option value="{{ subject.id }}">{{ subject.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                            <div class="attendance-details" id="attendance_details" style="display: none;">
+                                <div class="form-group">
+                                    <label for="subject">Subject</label>
+                                    <select class="form-control" name="subject" id="subject" required>
+                                        <option value="">Select Subject</option>
+                                        {% for subject in subjects %}
+                                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
 
-                            <div class="form-group">
-                                <label for="attendance_date">Attendance Date</label>
-                                <input type="date" class="form-control" name="attendance_date" id="attendance_date" required>
-                            </div>
+                                <div class="form-group">
+                                    <label for="attendance_date">Attendance Date</label>
+                                    <input type="date" class="form-control" name="attendance_date" id="attendance_date" required>
+                                </div>
 
-                            <button type="submit" id="attendance_button" class="btn btn-take-attendance">
-                                <i class="fas fa-check-circle mr-2"></i>Take Attendance
-                            </button>
+                                <div class="form-group">
+                                    <label>Attendance Status</label>
+                                    <div class="status-options">
+                                        <div class="custom-control custom-radio custom-control-inline">
+                                            <input type="radio" id="status_present" name="attendance_status" value="True" class="custom-control-input" checked>
+                                            <label class="custom-control-label" for="status_present">
+                                                <i class="fas fa-check-circle text-success mr-1"></i> Present
+                                            </label>
+                                        </div>
+                                        <div class="custom-control custom-radio custom-control-inline">
+                                            <input type="radio" id="status_absent" name="attendance_status" value="False" class="custom-control-input">
+                                            <label class="custom-control-label" for="status_absent">
+                                                <i class="fas fa-times-circle text-danger mr-1"></i> Absent
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" id="attendance_button" class="btn btn-take-attendance">
+                                    <i class="fas fa-check-circle mr-2"></i>Take Attendance
+                                </button>
+                            </div>
                         </div>
                     </form>
+                    
+                    <!-- Status Messages -->
                     <div id="success_message" class="success-message">
                         <i class="fas fa-check-circle mr-2"></i>
                         <span id="success_text"></span>
@@ -299,303 +234,34 @@
 {% endblock content %}
 
 {% block custom_js %}
+<script src="{% static 'dist/js/student-info-table.js' %}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto focus on student ID input
-    document.getElementById('student_id').focus();
-
-    // Set default date to today
-    document.getElementById('attendance_date').valueAsDate = new Date();
-
-    // Form submission handler
-    const form = document.getElementById('attendanceForm');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Get the selected subject ID
+    // Additional script for handling subject selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('attendanceForm');
         const subjectSelect = document.getElementById('subject');
-        const subjectId = subjectSelect.value;
         
-        if (!subjectId) {
-            showError('Please select a subject');
-            return;
-        }
-        
-        // Set the subject_id in the hidden input
-        document.getElementById('attendance_subject_id').value = subjectId;
-        
-        // Get form data
-        const formData = new FormData(form);
-        
-        // Disable submit button and show loading state
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
-        submitBtn.disabled = true;
-
-        // Submit the form
-        fetch('{% url "staff_take_attendance_by_qr" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+        // Make sure subject_id is properly set when the form is submitted
+        form.addEventListener('submit', function(e) {
+            // Get the selected subject ID from the dropdown
+            const subjectId = subjectSelect.value;
+            
+            // If the dropdown is visible and a value is selected, set it in the hidden field
+            if (subjectSelect.style.display !== 'none' && subjectId) {
+                document.getElementById('attendance_subject_id').value = subjectId;
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                showSuccess(data.message);
-                // Clear form
-                document.getElementById('student_id').value = '';
-                document.getElementById('student_info').classList.remove('active');
-                document.getElementById('attendance_details').style.display = 'none';
-            } else {
-                showError(data.message || 'An error occurred');
+            
+            // If no subject is selected and required, prevent form submission
+            if (!document.getElementById('attendance_subject_id').value) {
+                e.preventDefault();
+                showError('Please select a subject or scan another student QR code.');
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showError('An error occurred while processing your request.');
-        })
-        .finally(() => {
-            // Reset button state
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
+        });
+        
+        // When subject dropdown changes, update the hidden field
+        subjectSelect.addEventListener('change', function() {
+            document.getElementById('attendance_subject_id').value = this.value;
         });
     });
-});
-
-function showError(message) {
-    const errorDiv = document.getElementById('error_message');
-    const errorText = document.getElementById('error_text');
-    errorText.textContent = message;
-    errorDiv.style.display = 'block';
-    errorDiv.classList.add('show');
-    
-    // Hide success and warning messages if shown
-    const successDiv = document.getElementById('success_message');
-    successDiv.style.display = 'none';
-    successDiv.classList.remove('show');
-    
-    const warningDiv = document.getElementById('warning_message');
-    warningDiv.style.display = 'none';
-    warningDiv.classList.remove('show');
-    
-    // Auto hide after 5 seconds
-    setTimeout(() => {
-        errorDiv.style.display = 'none';
-        errorDiv.classList.remove('show');
-    }, 5000);
-}
-
-function showWarning(message) {
-    const warningDiv = document.getElementById('warning_message');
-    const warningText = document.getElementById('warning_text');
-    warningText.textContent = message;
-    warningDiv.style.display = 'block';
-    warningDiv.classList.add('show');
-    
-    // Hide success and error messages if shown
-    const successDiv = document.getElementById('success_message');
-    successDiv.style.display = 'none';
-    successDiv.classList.remove('show');
-    
-    const errorDiv = document.getElementById('error_message');
-    errorDiv.style.display = 'none';
-    errorDiv.classList.remove('show');
-    
-    // Auto hide after 5 seconds
-    setTimeout(() => {
-        warningDiv.style.display = 'none';
-        warningDiv.classList.remove('show');
-    }, 5000);
-}
-
-function showSuccess(message) {
-    const successDiv = document.getElementById('success_message');
-    const successText = document.getElementById('success_text');
-    successText.textContent = message;
-    successDiv.style.display = 'block';
-    successDiv.classList.add('show');
-    
-    // Hide warning and error messages if shown
-    const warningDiv = document.getElementById('warning_message');
-    warningDiv.style.display = 'none';
-    warningDiv.classList.remove('show');
-    
-    const errorDiv = document.getElementById('error_message');
-    errorDiv.style.display = 'none';
-    errorDiv.classList.remove('show');
-    
-    // Auto hide after 5 seconds
-    setTimeout(() => {
-        successDiv.style.display = 'none';
-        successDiv.classList.remove('show');
-    }, 5000);
-}
-
-// Function to check if student's course is compatible with staff's course
-function checkCourseCompatibility(studentCourse) {
-    const staffCourse = document.getElementById('staff_course').value;
-    const compatibilityIndicator = document.getElementById('course_compatibility');
-    const attendanceButton = document.getElementById('attendance_button');
-    
-    // Compare courses
-    if (studentCourse.toLowerCase() === staffCourse.toLowerCase()) {
-        // Courses match
-        compatibilityIndicator.textContent = "Student is registered with your course";
-        compatibilityIndicator.className = "course-compatibility course-compatible";
-        
-        // Enable attendance button
-        attendanceButton.disabled = false;
-        
-        // Show success notification
-        showSuccess("Student is already registered with you. You can record their attendance.");
-        
-        return true;
-    } else {
-        // Courses don't match
-        compatibilityIndicator.textContent = " The student is registered in " + studentCourse + " course and not registered in " + staffCourse;
-        compatibilityIndicator.className = "course-compatibility course-incompatible";
-        
-        // Disable attendance button
-        attendanceButton.disabled = true;
-        
-        // Show warning notification
-        showWarning("This student cannot be registered due to course mismatch.");
-        
-        return false;
-    }
-}
-
-// Handle student lookup
-let typingTimer;
-const doneTypingInterval = 500; // wait for 500ms after user stops typing
-
-document.getElementById('student_id').addEventListener('input', function() {
-    clearTimeout(typingTimer);
-    let studentId = this.value;
-    
-    // Try to parse JSON if the input looks like JSON data from QR code
-    if (studentId.trim().startsWith('{') && studentId.trim().endsWith('}')) {
-        try {
-            const jsonData = JSON.parse(studentId);
-            if (jsonData.student_code) {
-                // Extract just the student code from the JSON
-                studentId = jsonData.student_code;
-                // Update the input field to show only the student code
-                this.value = studentId;
-                
-                // Also update the hidden field
-                document.getElementById('attendance_student_id').value = studentId;
-                
-                console.log("Extracted student_code from QR JSON:", studentId);
-            }
-        } catch (e) {
-            console.error("Failed to parse QR JSON data:", e);
-            // Continue with the raw input if JSON parsing fails
-        }
-    }
-    
-    // Hide student info and attendance details when input is empty
-    if (!studentId) {
-        document.getElementById('student_info').classList.remove('active');
-        document.getElementById('attendance_details').style.display = 'none';
-        return;
-    }
-    
-    // Set the extracted student ID to the hidden field regardless
-    document.getElementById('attendance_student_id').value = studentId;
-
-    // Wait for user to stop typing before making the request
-    typingTimer = setTimeout(() => {
-        // Show loading state
-        document.getElementById('student_info').classList.remove('active');
-        document.getElementById('attendance_details').style.display = 'none';
-        
-        fetch('{% url "staff_get_student_session" %}', {
-            method: 'POST',
-            body: new URLSearchParams({
-                'student_id': studentId,
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
-            }),
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        })
-        .then(response => {
-            console.log('Response status:', response.status); // Debug log
-            if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.error || 'Network response was not ok');
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Received data:', data); // Debug log
-            if (data.error) {
-                showError(data.error);
-                return;
-            }
-
-            // Show student info and attendance details only if we have valid data
-            if (data.name && data.session) {
-                document.getElementById('student_name').value = data.name;
-                document.getElementById('student_session').value = data.session;
-                
-                // Set course information if available
-                if (data.course) {
-                    document.getElementById('student_course').value = data.course;
-                    
-                    // Check course compatibility
-                    const isCompatible = checkCourseCompatibility(data.course);
-                    
-                    // Show attendance details only if courses are compatible
-                    document.getElementById('attendance_details').style.display = isCompatible ? 'block' : 'none';
-                } else {
-                    document.getElementById('student_course').value = 'Not specified';
-                    
-                    // Can't determine compatibility without course
-                    showWarning("Student course not specified. Cannot verify compatibility.");
-                    document.getElementById('attendance_details').style.display = 'none';
-                    
-                    // Disable attendance button
-                    document.getElementById('attendance_button').disabled = true;
-                }
-                
-                // Set QR code if available
-                const qrCodeContainer = document.getElementById('qr_code_container');
-                const qrCodeImage = document.getElementById('qr_code_image');
-                const studentCodeElement = document.getElementById('student_code');
-                
-                if (data.qr_code) {
-                    qrCodeImage.src = '/media/' + data.qr_code;
-                    qrCodeImage.style.display = 'block';
-                    qrCodeContainer.style.display = 'block';
-                } else {
-                    qrCodeImage.style.display = 'none';
-                }
-                
-                // Set student code if available
-                if (data.student_code) {
-                    studentCodeElement.textContent = 'ID: ' + data.student_code;
-                    studentCodeElement.style.display = 'block';
-                } else {
-                    studentCodeElement.style.display = 'none';
-                }
-                
-                document.getElementById('student_info').classList.add('active');
-            } else {
-                showError('Student data not found. Please check the ID and try again.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error); // Debug log
-            showError(error.message || 'Error fetching student data. Please try again.');
-        });
-    }, doneTypingInterval);
-});
 </script>
 {% endblock custom_js %}

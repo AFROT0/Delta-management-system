@@ -1,0 +1,114 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+{% block custom_css %}
+<style>
+    select.form-control {
+        height: auto !important;
+        padding: 8px 12px;
+        font-size: 1.1em;
+    }
+</style>
+{% endblock custom_css %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <!-- general form elements -->
+                <div class="card card-dark">
+                    <div class="card-header">
+                        <h3 class="card-title text-white">{{page_title}}</h3>
+                    </div>
+                    
+                    <div class="card-body">
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            {% for field in form %}
+                                <div class="form-group">
+                                    <label>{{ field.label }}</label>
+                                    {{ field }}
+                                </div>
+                            {% endfor %}
+                            
+                            <!-- Subject Field -->
+                            <div class="form-group">
+                                <label>Subject</label>
+                                <select class="form-control" name="subject" id="subject">
+                                    <option value="">Select Subject</option>
+                                    {% for subject in form.instance.course.subject_set.all %}
+                                        <option value="{{ subject.id }}" {% if student_subjects.0.subject.id == subject.id %}selected{% endif %}>
+                                            {{ subject.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">Update Student</button>
+                        </form>
+                    </div>
+                </div>
+                <!-- /.card -->
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+$(document).ready(function(){
+    // Course selection change event
+    $("#id_course").on('change', function(){
+        var courseId = $(this).val();
+        var subjectDropdown = $("#subject");
+        
+        // Clear current options
+        subjectDropdown.html('<option value="">Select Subject</option>');
+        
+        // If no course is selected, return
+        if(!courseId) {
+            return;
+        }
+        
+        // Show loading indicator
+        subjectDropdown.prop('disabled', true).after('<span id="subject-loading" class="ml-2"><i class="fas fa-spinner fa-spin"></i> Loading subjects...</span>');
+        
+        // Fetch subjects for the selected course
+        $.ajax({
+            url: "{% url 'get_subjects_for_course' %}",
+            type: 'POST',
+            data: {
+                'course_id': courseId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                // Remove loading indicator
+                $("#subject-loading").remove();
+                subjectDropdown.prop('disabled', false);
+                
+                // Populate subjects dropdown
+                if(response.subjects && response.subjects.length > 0) {
+                    $.each(response.subjects, function(index, subject) {
+                        subjectDropdown.append($('<option></option>').val(subject.id).text(subject.name));
+                    });
+                } else {
+                    subjectDropdown.append($('<option></option>').val('').text('No subjects available for this course'));
+                }
+            },
+            error: function(xhr) {
+                // Remove loading indicator and show error
+                $("#subject-loading").remove();
+                subjectDropdown.prop('disabled', false);
+                subjectDropdown.after('<div class="text-danger mt-1">Failed to load subjects. Please try again.</div>');
+            }
+        });
+    });
+});
+</script>
+{% endblock custom_js %} 

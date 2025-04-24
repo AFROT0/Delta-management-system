@@ -91,12 +91,14 @@ def student_view_attendance(request):
             json_data = []
             for report in attendance_reports:
                 data = {
+                    "id": report.id,
                     "date": str(report.attendance.date),
-                    "status": report.status
+                    "status": report.status,
+                    "subject_name": report.attendance.subject.name
                 }
                 json_data.append(data)
                 
-            return JsonResponse(json.dumps(json_data), safe=False)
+            return JsonResponse(json_data, safe=False)
             
         except Exception as e:
             # Log the error for debugging
@@ -229,8 +231,10 @@ def student_view_result(request):
 def student_qr_code(request):
     student = get_object_or_404(Student, admin=request.user)
     
-    # Generate QR code data
-    qr_data = f"STUDENT:{student.admin.id}:{student.id_number}"
+    # Generate QR code data - only include student_code
+    student_data = {
+        'student_code': student.admin.student_code
+    }
     
     # Create QR code
     qr = qrcode.QRCode(
@@ -239,7 +243,7 @@ def student_qr_code(request):
         box_size=10,
         border=4,
     )
-    qr.add_data(qr_data)
+    qr.add_data(json.dumps(student_data))
     qr.make(fit=True)
     
     # Create QR code image
@@ -262,7 +266,7 @@ def student_qr_code(request):
     
     # Add student name and ID
     student_name = f"{student.admin.first_name} {student.admin.last_name}"
-    id_text = f"ID: {student.id_number}"
+    id_text = f"ID: {student.admin.student_code}"
     
     # Center the text
     student_name_width = draw.textlength(student_name, font=font)

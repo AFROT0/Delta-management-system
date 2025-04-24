@@ -18,50 +18,68 @@
                             <button onclick="printReport()" class="btn btn-primary ml-2">
                                 <i class="fas fa-print mr-1"></i> Print Report
                             </button>
+                            <form action="{% url 'generate_qr_codes' %}" method="post" style="display:inline-block;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-warning ml-2">
+                                    <i class="fas fa-qrcode mr-1"></i> Generate Missing QR Codes
+                                </button>
+                            </form>
                         </div>
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body">
                         <div id="printable-content">
-                            <table id="example2" class="table table-bordered">
+                            <table id="example2" class="table table-bordered" width="100%" cellspacing="0" cellpadding="8">
                                 <thead class="thead-dark">
                                     <tr>
-                                        <th>#</th>
-                                        <th>Full Name</th>
-                                        <th>Email</th>
-                                        <th>Gender</th>
-                                        <th>Course</th>
-                                        <th>Session</th>
-                                        <th>QR Code</th>
-                                        <th class="no-print">Actions</th>
+                                        <th width="5%">#</th>
+                                        <th width="15%">Full Name</th>
+                                        <th width="15%">Email</th>
+                                        <th width="8%">Gender</th>
+                                        <th width="12%">Course</th>
+                                        <th width="10%">Subject</th>
+                                        <th width="10%">Session</th>
+                                        <th width="10%"> Picture</th>
+                                        <th width="10%">QR Code</th>
+                                        <th width="15%" class="no-print">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for student in students %}
                                     <tr>
-                                        <td>{{ forloop.counter}}</td>
-                                        <td>{{student.first_name}}, {{student.last_name}}</td>
-                                        <td>{{student.email}}</td>
-                                        <td>{{student.gender}}</td>
-                                        <td>{{student.student.course.name}}</td>
-                                        <td>{{student.student.session.start_year}} - {{student.student.session.end_year}}</td>
+                                        <td align="center">{{ forloop.counter }}</td>
+                                        <td>{{ student.first_name }}, {{ student.last_name }}</td>
+                                        <td>{{ student.email }}</td>
+                                        <td align="center">{{ student.gender }}</td>
+                                        <td>{{ student.student.course.name }}</td>
                                         <td>
-                                            {% if student.qr_code %}
-                                            <div class="text-center">
-                                                <img class="img img-fluid mb-2" style="width: 56px; height: 56px;"
-                                                    src="/media/{{student.qr_code}}" alt="QR Code">
-                                                {% if student.student_code %}
-                                                <div class="font-weight-bold">ID: {{student.student_code}}</div>
-                                                {% endif %}
-                                            </div>
+                                            {% for student_subject in student.student.studentsubject_set.all %}
+                                                {{ student_subject.subject.name }}{% if not forloop.last %}, {% endif %}
+                                            {% empty %}
+                                                No Subject
+                                            {% endfor %}
+                                        </td>
+                                        <td align="center">{{ student.student.session.start_year }}-{{ student.student.session.end_year }}</td>
+                                        <td align="center">
+                                            {% if student.profile_pic %}
+                                                <img height="56" width="56" src="{{ student.profile_pic }}" alt="Profile Picture">
                                             {% else %}
-                                            No QR Code
+                                                <span>No Image</span>
                                             {% endif %}
                                         </td>
-                                        
-                                        <td class="no-print">
-                                            <a href="{% url 'edit_student' student.student.id %}" class="btn btn-info">Edit</a> -
-                                            <a href="{% url 'delete_student' student.student.id %}" class="btn btn-danger" onclick="return confirm('Are you sure about this ?')">Delete</a>
+                                        <td align="center">
+                                            {% if student.qr_code %}
+                                                <img height="56" width="56" src="/media/{{ student.qr_code }}" alt="QR Code"><br>
+                                                {% if student.student_code %}
+                                                    <small>ID: {{ student.student_code }}</small>
+                                                {% endif %}
+                                            {% else %}
+                                                <span>No QR Code</span>
+                                            {% endif %}
+                                        </td>
+                                        <td align="center" class="no-print">
+                                            <a href="{% url 'edit_student' student.student.id %}" class="btn btn-info">Edit</a>
+                                            <a href="{% url 'delete_student' student.student.id %}" class="btn btn-danger" onclick="return confirm('Are you sure about this?')">Delete</a>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -81,46 +99,15 @@
         let printContents = document.getElementById('printable-content').innerHTML;
         let originalContents = document.body.innerHTML;
         
-        // Create a style element for print-specific CSS
-        let printStyles = `
-            <style>
-                @media print {
-                    .no-print {
-                        display: none !important;
-                    }
-                    body {
-                        padding: 20px;
-                        font-family: Arial, sans-serif;
-                    }
-                    h1 {
-                        text-align: center;
-                        margin-bottom: 20px;
-                    }
-                    table {
-                        width: 100%;
-                        border-collapse: collapse;
-                    }
-                    th, td {
-                        border: 1px solid #ddd;
-                        padding: 8px;
-                        text-align: left;
-                    }
-                    th {
-                        background-color: #f2f2f2;
-                    }
-                }
-            </style>
-        `;
-
         // Create a header for the printed report
         let reportHeader = `
-            <div class="print-header">
+            <div style="text-align: center; margin-bottom: 20px;">
                 <h1>Student Report</h1>
                 <p>Generated on: ${new Date().toLocaleDateString()}</p>
             </div>
         `;
 
-        document.body.innerHTML = printStyles + reportHeader + printContents;
+        document.body.innerHTML = reportHeader + printContents;
         window.print();
         document.body.innerHTML = originalContents;
     }

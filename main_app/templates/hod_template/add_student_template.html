@@ -1,43 +1,13 @@
 {% extends 'main_app/base.html' %}
 {% load static %}
 {% block custom_css %}
-  <style>
-      .invalid{
-        font-style: italic;
-        font-weight: bold;
-        color: red;
-      }
-      .valid{
-        font-style: italic;
-        font-weight: bold;
-        color: green;
-      }
-      /* Enhanced styles for form controls */
-      select.form-control {
-          height: 45px !important;
-          padding: 10px !important;
-          font-size: 1.0em !important;
-      }
-      /* Larger dropdown options */
-      select.form-control option {
-          padding: 12px !important;
-          font-size: 1.0em !important;
-      }
-      /* Style for file input */
-      input[type="file"].form-control {
-          height: 40px !important;
-          padding: 10px !important;
-          font-size: 1.0em !important;
-          line-height: 1.0 !important;
-      }
-      /* Make file input text more visible */
-      input[type="file"].form-control::file-selector-button {
-          height: 40px !important;
-          padding: 8px 15px !important;
-          font-size: 1.0em !important;
-          margin-right: 15px !important;
-      }
-  </style>
+<style>
+    select.form-control {
+        height: auto !important;
+        padding: 8px 12px;
+        font-size: 1.1em;
+    }
+</style>
 {% endblock custom_css %}
 {% block page_title %}{{page_title}}{% endblock page_title %}
 
@@ -93,11 +63,19 @@
 
                             <div class="form-group">
                                 <label>Course</label>
-                                <select class="form-control" name="course" required>
+                                <select class="form-control" name="course" id="course" required>
                                     <option value="">Select Course</option>
                                     {% for course in form.course.field.queryset %}
                                     <option value="{{ course.id }}">{{ course.name }}</option>
                                     {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Subject</label>
+                                <select class="form-control" name="subject" id="subject" required>
+                                    <option value="">Select Subject</option>
+                                    <!-- Subjects will be loaded based on course selection -->
                                 </select>
                             </div>
 
@@ -236,6 +214,56 @@ $(document).ready(function(){
                 }
             });
         }, 500); // Wait 500ms after user stops typing
+    });
+    
+    // Course selection change event
+    $("#course").on('change', function(){
+        var courseId = $(this).val();
+        var subjectDropdown = $("#subject");
+        
+        // Clear current options
+        subjectDropdown.html('<option value="">Select Subject</option>');
+        
+        // If no course is selected, return
+        if(!courseId) {
+            return;
+        }
+        
+        // Show loading indicator
+        subjectDropdown.prop('disabled', true).after('<span id="subject-loading" class="ml-2"><i class="fas fa-spinner fa-spin"></i> Loading subjects...</span>');
+        
+        // Fetch subjects for the selected course
+        $.ajax({
+            url: "{% url 'get_subjects_for_course' %}",
+            type: 'POST',
+            data: {
+                'course_id': courseId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                // Remove loading indicator
+                $("#subject-loading").remove();
+                subjectDropdown.prop('disabled', false);
+                
+                // Populate subjects dropdown
+                if(response.subjects && response.subjects.length > 0) {
+                    $.each(response.subjects, function(index, subject) {
+                        subjectDropdown.append($('<option></option>').val(subject.id).text(subject.name));
+                    });
+                } else {
+                    subjectDropdown.append($('<option></option>').val('').text('No subjects available for this course'));
+                }
+            },
+            error: function(xhr) {
+                // Remove loading indicator and show error
+                $("#subject-loading").remove();
+                subjectDropdown.prop('disabled', false);
+                subjectDropdown.after('<div class="text-danger mt-1">Failed to load subjects. Please try again.</div>');
+            }
+        });
     });
 });
 </script>

@@ -3,59 +3,10 @@
 {% block page_title %}{{page_title}}{% endblock page_title %}
 {% block custom_css %}
 <style>
-    .status-present {
-        background-color: #4CAF50;
-        color: white;
-        font-weight: bold;
-        padding: 5px 10px;
-        border-radius: 4px;
-    }
-    
-    .status-absent {
-        background-color: #f44336;
-        color: white;
-        font-weight: bold;
-        padding: 5px 10px;
-        border-radius: 4px;
-    }
-    
-    /* Bigger dropdown labels */
-    .form-group label {
-        font-size: 1.0em !important;
-        font-weight: 500 !important;
-        margin-bottom: 8px !important;
-    }
-    
-    /* Adjust select size to match */
-    .form-group select.form-control {
-        height: 45px !important;
-        padding: 8px 12px !important;
-        font-size: 1.0em !important;
-    }
-    
-    /* Search input styling */
-    #student_search {
-        padding: 10px;
-        border: 1px solid #ddd;
-        margin-bottom: 15px;
-        width: 100%;
-        border-radius: 4px;
-        box-sizing: border-box;
-    }
-    
-    /* Print-specific styles */
-    @media print {
-        .no-print {
-            display: none !important;
-        }
-        
-        .card {
-            border: none !important;
-        }
-        
-        .table {
-            width: 100%;
-        }
+    select.form-control {
+        height: auto !important;
+        padding: 8px 12px;
+        font-size: 1.1em;
     }
 </style>
 {% endblock custom_css %}
@@ -68,7 +19,7 @@
                 <!-- general form elements -->
                 <div class="card card-dark">
                     <div class="card-header">
-                        <h3 class="card-title">{{page_title}}</h3>
+                        <h3 class="card-title text-white">{{page_title}}</h3>
                         <div class="float-right no-print">
                             <button id="print_attendance" class="btn btn-primary ml-2" style="display: none;">
                                 <i class="fas fa-print mr-1"></i> Print Report

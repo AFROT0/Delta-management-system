@@ -400,7 +400,10 @@
         
         // --- Calculate and display attendance statistics ---
         function calculateStats(attendanceData) {
-            const presentDays = attendanceData.filter(item => item.status).length;
+            // More robust status check to handle different data types
+            const presentDays = attendanceData.filter(item => 
+                item.status === true || item.status === "true" || item.status === 1
+            ).length;
             const absentDays = attendanceData.length - presentDays;
             const percentage = attendanceData.length > 0 
                 ? ((presentDays / attendanceData.length) * 100).toFixed(1) 
@@ -452,7 +455,8 @@
             .done(function (response) {
                 // Process successful response
                 try {
-                    var json_data = JSON.parse(response);
+                    // Check if response is already a JSON object or a string that needs parsing
+                    var json_data = typeof response === 'string' ? JSON.parse(response) : response;
 
                     if (json_data.length < 1) {
                         showMessage('info', "No attendance data found for the selected subject.");
@@ -463,8 +467,10 @@
                         // Populate the table
                         var tableRows = "";
                         json_data.forEach(function(item) {
-                            var statusText = item.status ? "Present" : "Absent";
-                            var statusClass = item.status ? "status-present" : "status-absent";
+                            // More robust status check to handle different data types
+                            var isPresent = item.status === true || item.status === "true" || item.status === 1;
+                            var statusText = isPresent ? "Present" : "Absent";
+                            var statusClass = isPresent ? "status-present" : "status-absent";
                             var dayName = getDayName(item.date);
                             
                             tableRows += `<tr>

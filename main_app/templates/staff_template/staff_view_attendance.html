@@ -1,0 +1,827 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+{% block content %}
+
+<style>
+    /* Bigger dropdown labels and controls */
+    .form-group label {
+        font-size: 1.0em !important;
+        font-weight: 500 !important;
+        margin-bottom: 10px !important;
+    }
+
+    .form-group select.form-control {
+        height: 48px !important;
+        padding: 10px 15px !important;
+        font-size: 1.0em !important;
+    }
+
+    .form-group option {
+        font-size: 1.0em !important;
+        padding: 8px !important;
+    }
+    
+    /* Table styling */
+    .attendance-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    
+    .attendance-table th, .attendance-table td {
+        padding: 12px;
+        text-align: left;
+        border: 1px solid #ddd;
+    }
+    
+    .attendance-table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+    
+    .attendance-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    
+    .status-present {
+        color: green;
+        font-weight: bold;
+    }
+    
+    .status-absent {
+        color: red;
+        font-weight: bold;
+    }
+    
+    .status-not-recorded {
+        color: #888;
+        font-style: italic;
+    }
+    
+    /* Recent attendance records card */
+    .recent-attendance-card {
+        margin-top: 30px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .recent-attendance-card .card-header {
+        background-color: #343a40;
+        color: white;
+        padding: 15px 20px;
+    }
+    
+    .recent-attendance-card .card-body {
+        padding: 0;
+    }
+    
+    .recent-records-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .recent-records-table th {
+        background-color: #f5f5f5;
+        padding: 12px 15px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .recent-records-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .recent-records-table tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .time-ago {
+        font-size: 0.85em;
+        color: #6c757d;
+    }
+    
+    .badge-attendance {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    
+    .attendance-progress {
+        height: 8px;
+        border-radius: 4px;
+        margin-top: 5px;
+    }
+    
+    .empty-records {
+        padding: 30px;
+        text-align: center;
+        color: #6c757d;
+    }
+    
+    .empty-records i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        display: block;
+    }
+    
+    .student-list {
+        margin-top: 10px;
+        max-height: 150px;
+        overflow-y: auto;
+        border-top: 1px solid #eee;
+        padding-top: 8px;
+    }
+    
+    .student-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px dotted #eee;
+    }
+    
+    .student-name {
+        font-size: 0.9em;
+    }
+    
+    .student-status {
+        font-size: 0.85em;
+        padding: 1px 8px;
+        border-radius: 12px;
+    }
+    
+    .student-present {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .student-absent {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .toggle-students {
+        font-size: 0.85em;
+        color: #007bff;
+        cursor: pointer;
+        display: inline-block;
+        margin-top: 5px;
+    }
+    
+    .toggle-students:hover {
+        text-decoration: underline;
+    }
+    
+    /* Report Actions */
+    .report-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+    
+    .btn-export {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .btn-export i {
+        font-size: 1rem;
+    }
+    
+    /* Print Styles */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .printable-area, .printable-area * {
+            visibility: visible;
+        }
+        .printable-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Recent Attendance Records Card -->
+            <div class="col-md-12">
+                <div class="card recent-attendance-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-history mr-2"></i>
+                            Recent Attendance Records
+                        </h3>
+                        <button id="refresh_recent_records" class="btn btn-sm btn-outline-light float-right">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent_records_loading" class="text-center p-4">
+                            <i class="fas fa-spinner fa-spin fa-2x text-secondary"></i>
+                            <p class="mt-2 text-secondary">Loading recent attendance records...</p>
+                        </div>
+                        <div id="recent_records_container" style="display: none;">
+                            <table class="recent-records-table">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Date</th>
+                                        <th>Created At</th>
+                                        <th>Attendance</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent_records_body">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="no_recent_records" class="empty-records" style="display: none;">
+                            <i class="fas fa-calendar-times"></i>
+                            <p>No recent attendance records found</p>
+                            <small>Records will appear here once attendance is taken</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Attendance View Card -->
+            <div class="col-md-12">
+                <div class="card card-dark">
+                    <div class="card-header">
+                        <h3 class="card-title text-white">{{page_title}}</h3>
+                    </div>
+
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Subject</label>
+                            <select name="subject" class="form-control" id='subject'>
+                                <option value="">----</option>
+                                {% for subject in subjects  %}
+                                <option value="{{subject.id}}">{{subject.name}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Session</label>
+                            <select name="session" class="form-control" id='session'>
+                                <option value="">----</option>
+                                {% for session in sessions  %}
+                                <option value="{{session.id}}">{{session}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" id='fetch_attendance' class="btn btn-success btn-block">Fetch Attendance</button>
+                        </div>
+                    
+                        <div class="form-group" style="display: none;" id="attendance_block">
+                            <div class="form-group">
+                                <label>Attendance Date</label>
+                                <select name="attendance_date" id='attendance_date' class="form-control">
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <div id="fetch_student_block" style="display: none;">
+                                    <button type="button" id='fetch_student' class="btn btn-success btn-block">View Students Attendance</button>
+                                </div>
+                                
+                                <!-- Report Action Buttons -->
+                                <div class="report-actions" id="report_actions" style="display: none;">
+                                    <button type="button" id="print_report" class="btn btn-info btn-export">
+                                        <i class="fas fa-print"></i> Print Report
+                                    </button>
+                                    <button type="button" id="export_excel" class="btn btn-success btn-export">
+                                        <i class="fas fa-file-excel"></i> Export to Excel
+                                    </button>
+                                </div>
+                                
+                                <div id='student_data' class="card-footer printable-area">
+                                </div>
+                            </div>
+                        </div>
+                    </div>  
+                </div>
+            </div>
+            
+            <!-- Comprehensive Report Card -->
+            <div class="col-md-12" id="comprehensive_report_block" style="display: none;">
+                <div class="card">
+                    <div class="card-header bg-primary">
+                        <h3 class="card-title text-white">
+                            <i class="fas fa-chart-bar mr-2"></i>
+                            Comprehensive Attendance Report
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Generate a comprehensive Excel report for the selected subject and session.
+                            This report includes all attendance data and statistics.
+                        </div>
+                        
+                        <div class="d-flex justify-content-center mt-4">
+                            <button type="button" id="generate_comprehensive_report" class="btn btn-lg btn-primary btn-export">
+                                <i class="fas fa-file-export mr-2"></i> Generate Comprehensive Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function () {
+        // Load recent attendance records when page loads
+        loadRecentAttendanceRecords();
+        
+        // Refresh button for recent records
+        $("#refresh_recent_records").click(function() {
+            loadRecentAttendanceRecords();
+        });
+        
+        // Print report button
+        $("#print_report").click(function() {
+            printReport();
+        });
+        
+        // Export to Excel (single date)
+        $("#export_excel").click(function() {
+            exportSingleDayReport();
+        });
+        
+        // Generate comprehensive report button
+        $("#generate_comprehensive_report").click(function() {
+            exportComprehensiveReport();
+        });
+        
+        function printReport() {
+            window.print();
+        }
+        
+        function exportSingleDayReport() {
+            var subject = $("#subject").val();
+            var session = $("#session").val();
+            var attendance_date = $("#attendance_date").val();
+            
+            if (!subject || !session || !attendance_date) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Information',
+                    text: 'Please select subject, session, and date',
+                    confirmButtonColor: '#28a745'
+                });
+                return;
+            }
+            
+            // Create a form to submit the data
+            var form = $('<form></form>').attr({
+                method: 'post',
+                action: "{% url 'staff_export_attendance' %}",
+                target: '_blank'
+            });
+            
+            // Add CSRF token
+            form.append($('<input>').attr({
+                type: 'hidden',
+                name: 'csrfmiddlewaretoken',
+                value: '{{ csrf_token }}'
+            }));
+            
+            // Add required fields
+            form.append($('<input>').attr({
+                type: 'hidden',
+                name: 'subject_id',
+                value: subject
+            }));
+            
+            form.append($('<input>').attr({
+                type: 'hidden',
+                name: 'session_id',
+                value: session
+            }));
+            
+            form.append($('<input>').attr({
+                type: 'hidden',
+                name: 'attendance_date_id',
+                value: attendance_date
+            }));
+            
+            // Submit the form
+            $('body').append(form);
+            form.submit();
+            form.remove();
+        }
+        
+        function exportComprehensiveReport() {
+            var subject = $("#subject").val();
+            var session = $("#session").val();
+            
+            if (!subject || !session) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Information',
+                    text: 'Please select subject and session',
+                    confirmButtonColor: '#28a745'
+                });
+                return;
+            }
+            
+            // Create a form to submit the data
+            var form = $('<form></form>').attr({
+                method: 'post',
+                action: "{% url 'staff_export_attendance' %}",
+                target: '_blank'
+            });
+            
+            // Add CSRF token
+            form.append($('<input>').attr({
+                type: 'hidden',
+                name: 'csrfmiddlewaretoken',
+                value: '{{ csrf_token }}'
+            }));
+            
+            // Add required fields
+            form.append($('<input>').attr({
+                type: 'hidden',
+                name: 'subject_id',
+                value: subject
+            }));
+            
+            form.append($('<input>').attr({
+                type: 'hidden',
+                name: 'session_id',
+                value: session
+            }));
+            
+            // Submit the form
+            $('body').append(form);
+            form.submit();
+            form.remove();
+        }
+        
+        function loadRecentAttendanceRecords() {
+            $("#recent_records_loading").show();
+            $("#recent_records_container").hide();
+            $("#no_recent_records").hide();
+            
+            $.ajax({
+                url: "{% url 'staff_recent_attendance' %}",
+                type: 'POST',
+                data: {}
+            }).done(function(response) {
+                $("#recent_records_loading").hide();
+                
+                if (response.status === 'success' && response.records && response.records.length > 0) {
+                    let recordsHTML = '';
+                    
+                    response.records.forEach(function(record) {
+                        // Create progress bar with attendance percentage
+                        const progressHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>${record.present_count}/${record.total_count} present (${record.present_percentage}%)</span>
+                            </div>
+                            <div class="progress attendance-progress">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: ${record.present_percentage}%" 
+                                     aria-valuenow="${record.present_percentage}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100"></div>
+                            </div>
+                        `;
+                        
+                        // Create student list HTML
+                        let studentsHTML = '';
+                        if (record.students && record.students.length > 0) {
+                            const recordId = `record_${record.id}`;
+                            
+                            // Create toggle button
+                            const toggleButtonHTML = `
+                                <div class="toggle-students" data-target="${recordId}">
+                                    <i class="fas fa-chevron-down"></i> Show student details
+                                </div>
+                            `;
+                            
+                            // Create student list
+                            studentsHTML = `
+                                ${toggleButtonHTML}
+                                <div class="student-list" id="${recordId}" style="display: none;">
+                            `;
+                            
+                            record.students.forEach(function(student) {
+                                const statusClass = student.status ? 'student-present' : 'student-absent';
+                                const statusText = student.status ? 'Present' : 'Absent';
+                                
+                                studentsHTML += `
+                                    <div class="student-item">
+                                        <span class="student-name">${student.name}</span>
+                                        <span class="student-status ${statusClass}">${statusText}</span>
+                                    </div>
+                                `;
+                            });
+                            
+                            studentsHTML += `</div>`;
+                        }
+                        
+                        recordsHTML += `
+                            <tr>
+                                <td><strong>${record.subject}</strong></td>
+                                <td>${record.date}</td>
+                                <td>
+                                    ${record.created_at}
+                                    <div class="time-ago">${record.time_ago}</div>
+                                </td>
+                                <td>
+                                    ${progressHTML}
+                                    ${studentsHTML}
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    $("#recent_records_body").html(recordsHTML);
+                    
+                    // Add toggle functionality for student lists
+                    $(".toggle-students").click(function() {
+                        const target = $(this).data('target');
+                        $(`#${target}`).slideToggle();
+                        
+                        // Toggle icon and text
+                        if ($(this).find('i').hasClass('fa-chevron-down')) {
+                            $(this).find('i').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                            $(this).html($(this).html().replace('Show', 'Hide'));
+                        } else {
+                            $(this).find('i').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                            $(this).html($(this).html().replace('Hide', 'Show'));
+                        }
+                    });
+                    
+                    $("#recent_records_container").show();
+                } else {
+                    $("#no_recent_records").show();
+                }
+            }).fail(function(error) {
+                $("#recent_records_loading").hide();
+                $("#no_recent_records").show();
+                console.error("Error fetching recent records:", error);
+            });
+        }
+        
+        // Store the subject and session for later use
+        var currentSubject = "";
+        var currentSession = "";
+        
+        $("#fetch_attendance").click(function(){
+            var subject = $("#subject").val()
+            var session = $("#session").val()
+            
+            // Store the selected values
+            currentSubject = subject;
+            currentSession = session;
+            
+            if (session.length < 1 || subject.length < 1){
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Information',
+                    text: 'Please choose both Subject and Session',
+                    confirmButtonColor: '#28a745'
+                });
+                $("#attendance_block").hide()
+                $("#comprehensive_report_block").hide();
+                return false
+            }
+            
+            // Show the comprehensive report block when subject and session are selected
+            $("#comprehensive_report_block").show();
+            
+            $.ajax({
+                url: "{% url 'get_attendance' %}",
+                type: 'POST',
+                data:{
+                    subject:subject,
+                    session:session
+                }
+            }).done(function(response){
+                var json_data = JSON.parse(response)
+                if (json_data.length > 0){
+                    var html = "";
+                    for (key in json_data){
+                        html += "<option value='"+json_data[key]['id']+"'>"+json_data[key]['attendance_date']+"</option>"
+                    }
+                    $("#attendance_date").html(html)
+                    $("#attendance_block").show()  
+                    $("#fetch_student_block").show()
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Attendance dates loaded successfully'
+                    });
+                }else{
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'No Data Found',
+                        text: 'No attendance dates found for the specified criteria',
+                        confirmButtonColor: '#28a745'
+                    });
+                    $("#attendance_date").html("")
+                    $("#attendance_block").hide()
+                }
+            }).fail(function(response){
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error while fetching attendance data',
+                    confirmButtonColor: '#28a745'
+                });
+                $("#attendance_block").hide()
+            })
+        })
+
+        $("#fetch_student").click(function () {
+            var attendance_date = $("#attendance_date").val()
+            $("#student_data").html(null)
+            if (attendance_date.length == 0){
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Date Required',
+                    text: 'Please choose a date',
+                    confirmButtonColor: '#28a745'
+                });
+                return false;
+            }
+            
+            var fetchBtn = $(this)
+            fetchBtn.prop('disabled', true)
+            fetchBtn.html('<i class="fas fa-spinner fa-spin"></i> Loading Attendance Data...')
+            
+            // Hide report actions while loading
+            $("#report_actions").hide();
+            
+            // Make two AJAX requests: one for attendance data and one for all enrolled students
+            $.ajax({
+                url: "{% url 'get_student_attendance' %}",
+                type: 'POST',
+                data: {
+                    attendance_date_id: attendance_date,
+                }
+            }).done(function (attendanceResponse) {
+                var attendanceData = JSON.parse(attendanceResponse);
+                
+                // Now fetch all students enrolled in this subject and session
+                $.ajax({
+                    url: "{% url 'get_students' %}",
+                    type: 'POST',
+                    data: {
+                        subject: currentSubject,
+                        session: currentSession
+                    },
+                    dataType: 'json'
+                }).done(function (enrolledStudents) {
+                    // Create a map of existing attendance records by student ID
+                    var attendanceMap = {};
+                    if (attendanceData.length > 0) {
+                        for (var i = 0; i < attendanceData.length; i++) {
+                            // Use student ID as key and attendance status as value
+                            attendanceMap[attendanceData[i].student_id] = {
+                                id: attendanceData[i].id,
+                                status: attendanceData[i].status
+                            };
+                        }
+                    }
+                    
+                    if (enrolledStudents.length < 1) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'No Data',
+                            text: 'No students are enrolled in this course for the selected session',
+                            confirmButtonColor: '#28a745'
+                        });
+                    } else {
+                        // Get the subject and date information for the report header
+                        var selectedSubject = $("#subject option:selected").text();
+                        var selectedDate = $("#attendance_date option:selected").text();
+                        
+                        // Create a table for displaying student attendance with a header
+                        var table_data = `
+                            <div class="report-header">
+                                <h4 class="text-center mb-3">Attendance Report</h4>
+                                <p class="text-center"><strong>Subject:</strong> ${selectedSubject} | <strong>Date:</strong> ${selectedDate}</p>
+                            </div>
+                        `;
+                        
+                        table_data += "<div class='table-responsive'><table class='attendance-table'>";
+                        table_data += "<thead><tr><th>#</th><th>Student Name</th><th>Attendance Status</th></tr></thead><tbody>";
+                        
+                        // Track attendance statistics
+                        var presentCount = 0;
+                        var absentCount = 0;
+                        
+                        for (var i = 0; i < enrolledStudents.length; i++) {
+                            var student = enrolledStudents[i];
+                            var attendanceRecord = attendanceMap[student.id];
+                            
+                            // CHANGE HERE: From "Not Recorded" to "Absent"
+                            var status = "Absent";  // Change from "Not Recorded" to "Absent"
+                            var statusClass = "status-absent";  // Change from "status-not-recorded" to "status-absent"
+                            
+                            if (attendanceRecord) {
+                                status = attendanceRecord.status ? "Present" : "Absent";
+                                statusClass = attendanceRecord.status ? "status-present" : "status-absent";
+                                
+                                if (attendanceRecord.status) {
+                                    presentCount++;
+                                } else {
+                                    absentCount++;
+                                }
+                            } else {
+                                absentCount++;
+                            }
+                            
+                            table_data += "<tr>" +
+                                "<td>" + (i + 1) + "</td>" +
+                                "<td>" + student.name + "</td>" +
+                                "<td class='" + statusClass + "'>" + status + "</td>" +
+                                "</tr>";
+                        }
+                        
+                        table_data += "</tbody></table></div>";
+                        
+                        // Add attendance summary
+                        var totalStudents = enrolledStudents.length;
+                        var presentPercentage = Math.round((presentCount / totalStudents) * 100);
+                        var absentPercentage = Math.round((absentCount / totalStudents) * 100);
+                        
+                        table_data += `
+                            <div class="attendance-summary mt-4">
+                                <h5>Summary</h5>
+                                <p><strong>Total Students:</strong> ${totalStudents}</p>
+                                <p><strong>Present:</strong> ${presentCount} (${presentPercentage}%)</p>
+                                <p><strong>Absent:</strong> ${absentCount} (${absentPercentage}%)</p>
+                            </div>
+                        `;
+                        
+                        $("#student_data").html(table_data);
+                        
+                        // Show report actions
+                        $("#report_actions").show();
+                        
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                        Toast.fire({
+                            icon: 'success',
+                            title: 'Student attendance loaded successfully'
+                        });
+                    }
+                }).fail(function (response) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error in fetching enrolled student data',
+                        confirmButtonColor: '#28a745'
+                    });
+                }).always(function() {
+                    fetchBtn.prop('disabled', false);
+                    fetchBtn.html('View Students Attendance');
+                });
+            }).fail(function (response) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error in fetching attendance data',
+                    confirmButtonColor: '#28a745'
+                });
+                fetchBtn.prop('disabled', false);
+                fetchBtn.html('View Students Attendance');
+            });
+        });
+    });
+</script>
+{% endblock custom_js %}

@@ -2,38 +2,13 @@
 {% load static %}
 {% block page_title %}{{page_title}}{% endblock page_title %}
 {% block custom_css %}
-  <style>
-      .invalid{
-        font-style: italic;
-        font-weight: bold;
-        color: red;
-      }
-      .valid{
-        font-style: italic;
-        font-weight: bold;
-        color: green;
-      }
-      /* New styles for dropdowns and gender label */
-      select.form-control {
-          height: 40px !important;
-          padding: 10px !important;
-          font-size: 1.0em !important;
-      }
-      .custom-file-label {
-          font-size: 1.0em !important;
-          padding: 8px 15px !important;
-          height: 40px !important;
-          line-height: 1.0 !important;
-      }
-      .custom-file-input {
-          height: 30px !important;
-      }
-      /* Make dropdown options larger */
-      select.form-control option {
-          padding: 10px !important;
-          font-size: 1.0em !important;
-      }
-  </style>
+<style>
+    select.form-control {
+        height: auto !important;
+        padding: 8px 12px;
+        font-size: 1.1em;
+    }
+</style>
 {% endblock custom_css %}
 {% block content %}
 

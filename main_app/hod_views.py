@@ -30,7 +30,7 @@ from .models import (
     Admin, Attendance, AttendanceReport, Course, CustomUser,
     FeedbackStaff, FeedbackStudent, LeaveReportStaff,
     LeaveReportStudent, NotificationStaff, NotificationStudent,
-    Session, Staff, Student, StudentResult, Subject
+    Session, Staff, Student, StudentResult, Subject, StudentSubject
 )
 
 
@@ -151,6 +151,9 @@ def add_student(request):
                 gender = form.cleaned_data.get('gender')
                 session = form.cleaned_data.get('session')
                 
+                # Get subject ID from POST data (not in form)
+                subject_id = request.POST.get('subject')
+                
                 # Generate a unique student code
                 student_code = generate_unique_student_code()
                 
@@ -180,16 +183,14 @@ def add_student(request):
                 student.session = session
                 student.save()
                 
+                # Generate QR code for the student
                 try:
-                    # Generate QR code with student data
-                    student_data = {
-                        'student_code': student_code,
-                        'name': f"{first_name} {last_name}",
-                        'email': email
-                    }
-                    
                     if qrcode is not None:
-                        print("Starting QR code generation...")  # Debug log
+                        # Create QR code with student data - only include student_code
+                        student_data = {
+                            'student_code': student_code
+                        }
+                        
                         # Create QR code
                         qr = qrcode.QRCode(
                             version=1,
@@ -209,64 +210,38 @@ def add_student(request):
                         # Create a unique filename for the QR code
                         filename = f'qr_code_{student_code}.png'
                         file_path = os.path.join('qr_codes', filename)
-                        print(f"Saving QR code to path: {file_path}")  # Debug log
                         
                         # Use FileSystemStorage to save the file
                         fs = FileSystemStorage()
                         saved_path = fs.save(file_path, ContentFile(buffer.getvalue()))
-                        print(f"QR code saved successfully at: {saved_path}")  # Debug log
                         
                         # Update user's qr_code field with the saved file path
                         user.qr_code = saved_path
                         user.save()
-                        print(f"User QR code path updated: {user.qr_code.url}")  # Debug log
-                        
-                        messages.success(request, f"QR code generated and saved successfully")
                     else:
                         messages.warning(request, "QR code generation is not available. Please install qrcode package.")
-                        print("QR code generation failed: qrcode module not available")  # Debug log
                 except Exception as qr_error:
                     messages.warning(request, f"Could not generate QR code: {str(qr_error)}")
-                    print(f"QR code generation error: {str(qr_error)}")  # Debug log
                 
-                # Check if request is AJAX
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({
-                        'status': 'success',
-                        'message': f'Student {first_name} {last_name} added successfully!'
-                    })
-                else:
-                    messages.success(request, "Successfully Added Student")
-                    return redirect(reverse('add_student'))
-                    
+                # Create StudentSubject record if subject was selected
+                if subject_id:
+                    try:
+                        subject = Subject.objects.get(id=subject_id)
+                        StudentSubject.objects.create(student=student, subject=subject)
+                    except Subject.DoesNotExist:
+                        messages.error(request, "Selected subject does not exist")
+                    except Exception as e:
+                        messages.error(request, f"Error assigning subject: {str(e)}")
+                
+                messages.success(request, "Successfully Added")
+                return redirect(reverse('add_student'))
             except Exception as e:
-                # Check if request is AJAX
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': f'Could not add student: {str(e)}'
-                    }, status=400)
-                else:
-                    messages.error(request, f"Could Not Add: {str(e)}")
+                messages.error(request, "Could Not Add: " + str(e))
         else:
-            # Check if request is AJAX
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                errors = dict(form.errors.items())
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Please correct the errors below.',
-                    'errors': errors
-                }, status=400)
-            else:
-                messages.error(request, "Please Fill All Required Fields!")
+            messages.error(request, "Form validation failed")
     else:
         form = StudentForm()
-    
-    context = {
-        'form': form,
-        'page_title': 'Add Student'
-    }
-    return render(request, 'hod_template/add_student_template.html', context)
+    return render(request, 'hod_template/add_student_template.html', {"form": form, "page_title": "Add Student"})
 
 def generate_unique_student_code():
     import random
@@ -446,6 +421,10 @@ def edit_student(request, student_id):
             course = form.cleaned_data.get('course')
             session = form.cleaned_data.get('session')
             passport = request.FILES.get('profile_pic') or None
+            
+            # Get subject ID from POST data
+            subject_id = request.POST.get('subject')
+            
             try:
                 user = CustomUser.objects.get(id=student.admin.id)
                 if passport != None:
@@ -465,14 +444,33 @@ def edit_student(request, student_id):
                 student.course = course
                 user.save()
                 student.save()
+                
+                # Handle subject - first remove existing if any
+                if subject_id:
+                    # Update or create subject association
+                    try:
+                        subject = Subject.objects.get(id=subject_id)
+                        # Remove existing subject associations first
+                        StudentSubject.objects.filter(student=student).delete()
+                        # Create new association
+                        StudentSubject.objects.create(student=student, subject=subject)
+                    except Subject.DoesNotExist:
+                        messages.error(request, "Selected subject does not exist")
+                    except Exception as e:
+                        messages.error(request, f"Error assigning subject: {str(e)}")
+                
                 messages.success(request, "Successfully Updated")
                 return redirect(reverse('edit_student', args=[student_id]))
             except Exception as e:
                 messages.error(request, "Could Not Update " + str(e))
         else:
-            messages.error(request, "Please Fill Form Properly!")
-    else:
-        return render(request, "hod_template/edit_student_template.html", context)
+            messages.error(request, "Form validation failed")
+    
+    # Get student subjects to display in template
+    student_subjects = StudentSubject.objects.filter(student=student)
+    context['student_subjects'] = student_subjects
+    
+    return render(request, "hod_template/edit_student.html", context)
 
 
 def edit_course(request, course_id):
@@ -1023,3 +1021,92 @@ def delete_session(request, session_id):
         session.delete()
         messages.success(request, "Session deleted successfully!")
     return redirect(reverse('manage_session'))
+
+# New function to get subjects for a course via AJAX
+def get_subjects_for_course(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+    
+    course_id = request.POST.get('course_id')
+    if not course_id:
+        return JsonResponse({'error': 'Course ID is required'}, status=400)
+    
+    try:
+        # Get subjects for the course
+        subjects = Subject.objects.filter(course_id=course_id).values('id', 'name')
+        return JsonResponse({'subjects': list(subjects)})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def generate_qr_codes(request):
+    """Generate QR codes for students who don't have one yet"""
+    
+    if request.method == 'POST':
+        try:
+            # Get all students without QR codes
+            students_without_qr = CustomUser.objects.filter(user_type=3, qr_code__isnull=True) | CustomUser.objects.filter(user_type=3, qr_code='')
+            
+            success_count = 0
+            fail_count = 0
+            
+            for user in students_without_qr:
+                try:
+                    if qrcode is not None and hasattr(user, 'student'):
+                        # If student doesn't have a student code, generate one
+                        if not user.student_code:
+                            user.student_code = generate_unique_student_code()
+                            user.save()
+                        
+                        # Create QR code with student data - only include student_code
+                        student_data = {
+                            'student_code': user.student_code
+                        }
+                        
+                        # Create QR code
+                        qr = qrcode.QRCode(
+                            version=1,
+                            error_correction=qrcode.constants.ERROR_CORRECT_L,
+                            box_size=10,
+                            border=4,
+                        )
+                        qr.add_data(json.dumps(student_data))
+                        qr.make(fit=True)
+                        qr_image = qr.make_image(fill_color="black", back_color="white")
+                        
+                        # Save QR code
+                        buffer = BytesIO()
+                        qr_image.save(buffer, format='PNG')
+                        buffer.seek(0)
+                        
+                        # Create a unique filename for the QR code
+                        filename = f'qr_code_{user.student_code}.png'
+                        file_path = os.path.join('qr_codes', filename)
+                        
+                        # Use FileSystemStorage to save the file
+                        fs = FileSystemStorage()
+                        saved_path = fs.save(file_path, ContentFile(buffer.getvalue()))
+                        
+                        # Update user's qr_code field with the saved file path
+                        user.qr_code = saved_path
+                        user.save()
+                        
+                        success_count += 1
+                    else:
+                        fail_count += 1
+                except Exception as e:
+                    fail_count += 1
+                    continue
+            
+            if success_count > 0:
+                messages.success(request, f"Successfully generated {success_count} QR codes.")
+            if fail_count > 0:
+                messages.warning(request, f"Failed to generate {fail_count} QR codes.")
+            
+            return redirect(reverse('manage_student'))
+            
+        except Exception as e:
+            messages.error(request, f"Error generating QR codes: {str(e)}")
+            return redirect(reverse('manage_student'))
+    
+    # If not POST, just redirect back to student management
+    return redirect(reverse('manage_student'))

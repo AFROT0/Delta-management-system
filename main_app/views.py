@@ -406,7 +406,11 @@ def get_recent_attendance(request):
             student_id=student.id
         ).order_by('-attendance__created_at')[:10]
         
+        import logging
+        logging.info(f"Retrieved {len(attendance_reports)} attendance reports for student {student.id}")
+        
         for report in attendance_reports:
+            logging.info(f"Report ID: {report.id}, Status: {report.status}, Type: {type(report.status)}")
             recent_attendance.append({
                 'date': report.attendance.created_at.strftime('%Y-%m-%d'),
                 'subject': report.attendance.subject.name,
@@ -431,6 +435,7 @@ def get_recent_attendance(request):
             'status': 'error',
             'message': str(e)
         }), safe=False)
+
 @csrf_exempt
 def save_attendance_data(request):
     if request.method == 'POST':

@@ -183,284 +183,236 @@
     </div><!-- /.container-fluid -->
 </section>
 
-<style>
-    /* Add mode-specific text colors */
-    @media (prefers-color-scheme: dark) {
-        .text-mode {
-            color: white !important;
-        }
-        .chart-text-color {
-            color: white !important;
-        }
-        .card-body {
-            color: white !important;
-        }
-    }
-    
-    @media (prefers-color-scheme: light) {
-        .text-mode {
-            color: black !important;
-        }
-        .chart-text-color {
-            color: black !important;
-        }
-        .card-body {
-            color: black !important;
-        }
-    }
-    
-    /* Additional utility class for the small box footers */
-    .small-box-footer {
-        color: rgba(255, 255, 255, 0.8) !important;
-    }
-    .small-box-footer:hover {
-        color: white !important;
-    }
-</style>
+
 {% endblock content %}
 
 {% block custom_js %}
 <script>
-$(document).ready(function(){
-    // Detect dark mode
-    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    // Set text colors based on mode
-    const textColor = isDarkMode ? 'white' : 'black';
-    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-    
-    // Staff-Students Overview Chart
-    var staffStudentData = {
-        labels: ['Students', 'Staff'],
-        datasets: [{
-            data: [{{total_students}}, {{total_staff}}],
-            backgroundColor: ['#4e73df', '#1cc88a'],
-            hoverBackgroundColor: ['#2e59d9', '#17a673'],
-            hoverBorderColor: "rgba(234, 236, 244, 1)"
-        }]
-    };
-
-    var overviewCtx = document.getElementById('pieChart').getContext('2d');
-    new Chart(overviewCtx, {
-        type: 'doughnut',
-        data: staffStudentData,
-        options: {
+    $(document).ready(function(){
+        // Function to get CSS variables
+        function getCssVar(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+        
+        // Get theme colors
+        const textColor = getCssVar('--chart-text');
+        const gridColor = getCssVar('--border-color');
+        const cardBg = getCssVar('--card-bg');
+        
+        // Configure global Chart.js defaults
+        Chart.defaults.global.defaultFontColor = textColor;
+        
+        // Common chart options for responsive, theme-aware design
+        const commonOptions = {
+            responsive: true,
             maintainAspectRatio: false,
-            tooltips: {
-                backgroundColor: "rgb(255,255,255)",
-                bodyFontColor: "#000000",
-                borderColor: '#dddfeb',
-                borderWidth: 1,
-                xPadding: 15,
-                yPadding: 15,
-                displayColors: false,
-                caretPadding: 10,
-            },
             legend: {
                 display: true,
                 position: 'bottom',
                 labels: {
-                    fontColor: '#000000'
+                    fontColor: textColor
                 }
             },
-            cutoutPercentage: 80
-        }
-    });
-
-    // Attendance Per Subject Chart
-    var attendanceData = {
-        labels: {{ subject_list|safe }},
-        datasets: [{
-            label: 'Attendance Count',
-            data: {{ attendance_list }},
-            backgroundColor: '#36b9cc',
-            borderColor: '#36b9cc',
-            borderWidth: 1
-        }]
-    };
-
-    var attendanceCtx = document.getElementById('barChart').getContext('2d');
-    new Chart(attendanceCtx, {
-        type: 'bar',
-        data: attendanceData,
-        options: {
-            maintainAspectRatio: false,
+            tooltips: {
+                backgroundColor: cardBg,
+                titleFontColor: textColor,
+                bodyFontColor: textColor,
+                borderColor: gridColor,
+                borderWidth: 1
+            }
+        };
+        
+        // Scale options for bar charts
+        const scaleOptions = {
             scales: {
                 yAxes: [{
                     ticks: {
                         beginAtZero: true,
-                        fontColor: '#000000'
+                        fontColor: textColor
                     },
                     gridLines: {
-                        color: "rgba(0, 0, 0, 0.1)"
+                        color: gridColor,
+                        zeroLineColor: gridColor
                     }
                 }],
                 xAxes: [{
                     ticks: {
-                        fontColor: '#000000'
+                        fontColor: textColor
                     },
                     gridLines: {
-                        color: "rgba(0, 0, 0, 0.1)"
+                        color: gridColor,
+                        zeroLineColor: gridColor
                     }
                 }]
-            },
-            legend: {
-                display: true,
-                position: 'top',
-                labels: {
-                    fontColor: '#000000'
-                }
             }
-        }
-    });
-
-    // Student's Attendance & Leave Overview
-    var studentAttendanceData = {
-        labels: {{ student_name_list|safe }},
-        datasets: [{
-            label: 'Present',
-            backgroundColor: '#1cc88a',
-            data: {{ student_attendance_present_list }}
-        }, {
-            label: 'Absent/Leave',
-            backgroundColor: '#e74a3b',
-            data: {{ student_attendance_leave_list }}
-        }]
-    };
-
-    var studentAttendanceCtx = document.getElementById('barChart2').getContext('2d');
-    new Chart(studentAttendanceCtx, {
-        type: 'bar',
-        data: studentAttendanceData,
-        options: {
-            maintainAspectRatio: false,
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true,
-                        fontColor: '#000000'
-                    },
-                    gridLines: {
-                        color: "rgba(0, 0, 0, 0.1)"
-                    }
-                }],
-                xAxes: [{
-                    ticks: {
-                        fontColor: '#000000'
-                    },
-                    gridLines: {
-                        color: "rgba(0, 0, 0, 0.1)"
-                    }
-                }]
-            },
-            legend: {
-                display: true,
-                position: 'top',
-                labels: {
-                    fontColor: '#000000'
-                }
-            }
-        }
-    });
-
-    // Course Statistics
-    var courseData = {
-        labels: {{ course_name_list|safe }},
-        datasets: [{
-            label: 'Number of Students',
-            data: {{ student_count_list_in_course }},
-            backgroundColor: '#4e73df',
-            borderColor: '#4e73df',
-            borderWidth: 1
-        }]
-    };
-
-    var courseCtx = document.getElementById('courseChart').getContext('2d');
-    new Chart(courseCtx, {
-        type: 'bar',
-        data: courseData,
-        options: {
-            maintainAspectRatio: false,
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true,
-                        fontColor: '#000000'
-                    },
-                    gridLines: {
-                        color: "rgba(0, 0, 0, 0.1)"
-                    }
-                }],
-                xAxes: [{
-                    ticks: {
-                        fontColor: '#000000'
-                    },
-                    gridLines: {
-                        color: "rgba(0, 0, 0, 0.1)"
-                    }
-                }]
-            },
-            legend: {
-                display: true,
-                position: 'top',
-                labels: {
-                    fontColor: '#000000'
-                }
-            }
-        }
-    });
-
-    // Subject Statistics
-    var subjectData = {
-        labels: {{ subject_list|safe }},
-        datasets: [{
-            label: 'Number of Students',
-            data: {{ student_count_list_in_subject }},
-            backgroundColor: '#1cc88a',
-            borderColor: '#1cc88a',
-            borderWidth: 1
-        }]
-    };
-
-    var subjectCtx = document.getElementById('subjectChart').getContext('2d');
-    new Chart(subjectCtx, {
-        type: 'bar',
-        data: subjectData,
-        options: {
-            maintainAspectRatio: false,
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true,
-                        fontColor: '#000000'
-                    },
-                    gridLines: {
-                        color: "rgba(0, 0, 0, 0.1)"
-                    }
-                }],
-                xAxes: [{
-                    ticks: {
-                        fontColor: '#000000'
-                    },
-                    gridLines: {
-                        color: "rgba(0, 0, 0, 0.1)"
-                    }
-                }]
-            },
-            legend: {
-                display: true,
-                position: 'top',
-                labels: {
-                    fontColor: '#000000'
-                }
-            }
-        }
-    });
+        };
+        
+        // 1. Staff-Students Overview Chart
+        var staffStudentData = {
+            labels: ['Students', 'Staff'],
+            datasets: [{
+                data: [{{total_students}}, {{total_staff}}],
+                backgroundColor: ['#4e73df', '#1cc88a'],
+                hoverBackgroundColor: ['#2e59d9', '#17a673'],
+                hoverBorderColor: gridColor
+            }]
+        };
     
-    // Listen for theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-        location.reload(); // Reload to apply new color scheme
+        var overviewCtx = document.getElementById('pieChart').getContext('2d');
+        var pieOptions = {
+            ...commonOptions,
+            cutoutPercentage: 80
+        };
+        
+        new Chart(overviewCtx, {
+            type: 'doughnut',
+            data: staffStudentData,
+            options: pieOptions
+        });
+    
+        // 2. Attendance Per Subject Chart
+        var attendanceData = {
+            labels: {{ subject_list|safe }},
+            datasets: [{
+                label: 'Attendance Count',
+                data: {{ attendance_list }},
+                backgroundColor: '#36b9cc',
+                borderColor: '#36b9cc',
+                borderWidth: 1
+            }]
+        };
+    
+        var attendanceCtx = document.getElementById('barChart').getContext('2d');
+        new Chart(attendanceCtx, {
+            type: 'bar',
+            data: attendanceData,
+            options: {
+                ...commonOptions,
+                ...scaleOptions
+            }
+        });
+    
+        // 3. Student's Attendance & Leave Overview
+        var studentAttendanceData = {
+            labels: {{ student_name_list|safe }},
+            datasets: [{
+                label: 'Present',
+                backgroundColor: '#1cc88a',
+                data: {{ student_attendance_present_list }}
+            }, {
+                label: 'Absent/Leave',
+                backgroundColor: '#e74a3b',
+                data: {{ student_attendance_leave_list }}
+            }]
+        };
+    
+        var studentAttendanceCtx = document.getElementById('barChart2').getContext('2d');
+        new Chart(studentAttendanceCtx, {
+            type: 'bar',
+            data: studentAttendanceData,
+            options: {
+                ...commonOptions,
+                ...scaleOptions
+            }
+        });
+    
+        // 4. Course Statistics
+        var courseData = {
+            labels: {{ course_name_list|safe }},
+            datasets: [{
+                label: 'Number of Students',
+                data: {{ student_count_list_in_course }},
+                backgroundColor: '#4e73df',
+                borderColor: '#4e73df',
+                borderWidth: 1
+            }]
+        };
+    
+        var courseCtx = document.getElementById('courseChart').getContext('2d');
+        new Chart(courseCtx, {
+            type: 'bar',
+            data: courseData,
+            options: {
+                ...commonOptions,
+                ...scaleOptions
+            }
+        });
+    
+        // 5. Subject Statistics
+        var subjectData = {
+            labels: {{ subject_list|safe }},
+            datasets: [{
+                label: 'Number of Students',
+                data: {{ student_count_list_in_subject }},
+                backgroundColor: '#1cc88a',
+                borderColor: '#1cc88a',
+                borderWidth: 1
+            }]
+        };
+    
+        var subjectCtx = document.getElementById('subjectChart').getContext('2d');
+        new Chart(subjectCtx, {
+            type: 'bar',
+            data: subjectData,
+            options: {
+                ...commonOptions,
+                ...scaleOptions
+            }
+        });
+        
+        // Update charts when theme changes
+        function updateCharts() {
+            const newTextColor = getCssVar('--chart-text');
+            const newGridColor = getCssVar('--border-color');
+            const newCardBg = getCssVar('--card-bg');
+            
+            // Update all Chart instances
+            Chart.helpers.each(Chart.instances, function(chart) {
+                // Update legend colors
+                if (chart.options.legend && chart.options.legend.labels) {
+                    chart.options.legend.labels.fontColor = newTextColor;
+                }
+                
+                // Update tooltip colors
+                if (chart.options.tooltips) {
+                    chart.options.tooltips.backgroundColor = newCardBg;
+                    chart.options.tooltips.titleFontColor = newTextColor;
+                    chart.options.tooltips.bodyFontColor = newTextColor;
+                    chart.options.tooltips.borderColor = newGridColor;
+                }
+                
+                // Update scales if they exist
+                if (chart.options.scales) {
+                    if (chart.options.scales.yAxes) {
+                        chart.options.scales.yAxes.forEach(function(axis) {
+                            if (axis.ticks) axis.ticks.fontColor = newTextColor;
+                            if (axis.gridLines) {
+                                axis.gridLines.color = newGridColor;
+                                axis.gridLines.zeroLineColor = newGridColor;
+                            }
+                        });
+                    }
+                    
+                    if (chart.options.scales.xAxes) {
+                        chart.options.scales.xAxes.forEach(function(axis) {
+                            if (axis.ticks) axis.ticks.fontColor = newTextColor;
+                            if (axis.gridLines) {
+                                axis.gridLines.color = newGridColor;
+                                axis.gridLines.zeroLineColor = newGridColor;
+                            }
+                        });
+                    }
+                }
+                
+                // Update the chart
+                chart.update();
+            });
+        }
+        
+        // Listen for theme toggle click
+        $('#themeToggle').on('click', function() {
+            setTimeout(updateCharts, 100); // Delay to ensure CSS has updated
+        });
     });
-});
 </script>
 {% endblock custom_js %}
