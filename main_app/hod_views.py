@@ -284,6 +284,7 @@ def add_course(request):
 
 
 
+
 def add_subject(request):
     form = SubjectForm(request.POST or None)
     context = {
@@ -327,8 +328,12 @@ def manage_staff(request):
 
 def manage_student(request):
     students = CustomUser.objects.filter(user_type=3)
+    courses = Course.objects.all()
+    sessions = Session.objects.all()
     context = {
         'students': students,
+        'courses': courses,
+        'sessions': sessions,
         'page_title': 'Manage Students'
     }
     return render(request, "hod_template/manage_student.html", context)
@@ -1109,4 +1114,42 @@ def generate_qr_codes(request):
             return redirect(reverse('manage_student'))
     
     # If not POST, just redirect back to student management
+    return redirect(reverse('manage_student'))
+
+def delete_multiple_students(request):
+    """
+    Delete multiple students based on submitted form data
+    """
+    if request.method == 'POST':
+        selected_ids = request.POST.getlist('selected_students')
+        
+        if not selected_ids:
+            messages.error(request, "No students selected for deletion")
+            return redirect(reverse('manage_student'))
+        
+        try:
+            # Begin transaction for safe bulk deletion
+            with transaction.atomic():
+                deleted_count = 0
+                for student_id in selected_ids:
+                    try:
+                        student = get_object_or_404(CustomUser, student__id=student_id)
+                        
+                        # Delete related records first
+                        AttendanceReport.objects.filter(student=student.student).delete()
+                        LeaveReportStudent.objects.filter(student=student.student).delete()
+                        FeedbackStudent.objects.filter(student=student.student).delete()
+                        NotificationStudent.objects.filter(student=student.student).delete()
+                        StudentSubject.objects.filter(student=student.student).delete()
+                        
+                        # Delete the student and user
+                        student.delete()
+                        deleted_count += 1
+                    except Exception as e:
+                        continue
+                
+                messages.success(request, f"Successfully deleted {deleted_count} student(s)")
+        except Exception as e:
+            messages.error(request, f"Error during bulk deletion: {str(e)}")
+    
     return redirect(reverse('manage_student'))

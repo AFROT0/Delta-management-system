@@ -29,7 +29,7 @@ def staff_home(request):
         subject_list.append(subject.name)
         attendance_list.append(attendance_count)
     context = {
-        'page_title': 'Staff Panel - ' + str(staff.admin.last_name) + ' (' + str(staff.course) + ')',
+        'page_title': 'Staff Panel - ' + str(staff.admin.first_name) + ' (' + str(staff.course) + ')',
         'total_students': total_students,
         'total_attendance': total_attendance,
         'total_leave': total_leave,
@@ -188,7 +188,7 @@ def staff_take_attendance_by_qr(request):
     
     context = {
         'subjects': subjects,
-        'page_title': 'Take Attendance by QR Code',
+        'page_title': 'Take Attendance',
         'last_attendance': last_attendance
     }
     return render(request, 'staff_template/staff_take_attendance_by_qr.html', context)
@@ -272,6 +272,74 @@ def get_student_attendance(request):
         return JsonResponse(json.dumps(student_data), content_type='application/json', safe=False)
     except Exception as e:
         return e
+
+@csrf_exempt
+def update_attendance_status(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+    
+    try:
+        # Get data from the request
+        attendance_id = request.POST.get('attendance_id')
+        student_id = request.POST.get('student_id')
+        new_status = request.POST.get('status')
+        attendance_date_id = request.POST.get('attendance_date_id')
+        
+        # Convert string 'true'/'false' to boolean
+        is_present = True if new_status.lower() == 'true' else False
+        
+        if attendance_id and attendance_id != 'null':
+            # Update existing attendance record
+            attendance_record = get_object_or_404(AttendanceReport, id=attendance_id)
+            attendance_record.status = is_present
+            attendance_record.save()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Attendance status updated successfully',
+                'record_id': attendance_record.id,
+                'is_present': is_present
+            })
+        elif student_id and attendance_date_id:
+            # Create new attendance record if it doesn't exist
+            attendance = get_object_or_404(Attendance, id=attendance_date_id)
+            student = get_object_or_404(Student, id=student_id)
+            
+            # Check if record already exists (shouldn't happen but just in case)
+            existing_record = AttendanceReport.objects.filter(
+                attendance=attendance,
+                student=student
+            ).first()
+            
+            if existing_record:
+                existing_record.status = is_present
+                existing_record.save()
+                record_id = existing_record.id
+            else:
+                new_record = AttendanceReport.objects.create(
+                    student=student,
+                    attendance=attendance,
+                    status=is_present
+                )
+                record_id = new_record.id
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Attendance record created successfully',
+                'record_id': record_id,
+                'is_present': is_present
+            })
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Missing required parameters'
+            }, status=400)
+            
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'An error occurred: {str(e)}'
+        }, status=500)
 
 @csrf_exempt
 def get_enrolled_students(request):

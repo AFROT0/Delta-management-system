@@ -8,6 +8,104 @@
         padding: 8px 12px;
         font-size: 1.1em;
     }
+    
+    /* Student table dark mode support */
+    #student_table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    #student_table th {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: var(--text-color);
+        font-weight: 600;
+    }
+    
+    #student_table tbody tr:nth-child(even) {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    #student_table tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+    
+    [data-theme="dark"] #student_table th {
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+    
+    [data-theme="dark"] #student_table tbody tr:nth-child(even) {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+    
+    [data-theme="dark"] #student_table tbody tr:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Attendance info styling */
+    #attendance_info {
+        padding: 15px;
+        background-color: rgba(0, 0, 0, 0.02);
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    [data-theme="dark"] #attendance_info {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+    
+    /* Status indicators */
+    .status-present {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .status-absent {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    [data-theme="dark"] .status-present {
+        color: #48bb78;
+    }
+    
+    [data-theme="dark"] .status-absent {
+        color: #f56565;
+    }
+    
+    /* Print styles */
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        body {
+            background-color: white !important;
+            color: black !important;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        #student_table th {
+            background-color: #f2f2f2 !important;
+            color: black !important;
+        }
+        
+        #student_table tr, #student_table td {
+            background-color: white !important;
+            color: black !important;
+        }
+        
+        .status-present {
+            color: #28a745 !important;
+        }
+        
+        .status-absent {
+            color: #dc3545 !important;
+        }
+    }
 </style>
 {% endblock custom_css %}
 {% block content %}

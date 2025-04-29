@@ -1,76 +1,479 @@
 {% extends 'main_app/base.html' %}
 {% load static %}
-{% block page_title %}Take Attendance by QR Code{% endblock page_title %}
+{% block page_title %}Take Attendance{% endblock page_title %}
 
 {% block custom_css %}
 <link rel="stylesheet" href="{% static 'dist/css/student-table.css' %}">
 <style>
-    /* Attendance Status Styles */
-    .status-options {
-        display: flex;
-        margin-top: 10px;
+    /* Dark mode styles for the attendance page */
+    [data-theme="dark"] {
+        --text-color: #f0f0f0;
+        --bg-color: #121212;
+        --card-bg: #1e1e1e;
+        --input-bg: #2d2d2d;
+        --input-border: #444;
+        --input-color: #e0e0e0;
+        --btn-bg: #2d4263;
+        --btn-hover: #3a5480;
+        --label-color: #c0c0c0;
+        --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        --border-color: #333;
+        --countdown-bg: rgba(20, 20, 20, 0.9);
+        --countdown-border: #444;
+        --table-header-bg: #232323;
+        --table-border: #444;
+        --table-hover: #2c2c2c;
     }
     
-    .custom-control-input:checked ~ .custom-control-label[for="status_present"] {
-        color: #28a745;
+    [data-theme="light"] {
+        --text-color: #333;
+        --bg-color: #f5f5f5;
+        --card-bg: #fff;
+        --input-bg: #fff;
+        --input-border: #ddd;
+        --input-color: #333;
+        --btn-bg: #0056b3;
+        --btn-hover: #004494;
+        --label-color: #495057;
+        --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --border-color: #ddd;
+        --countdown-bg: rgba(245, 245, 245, 0.95);
+        --countdown-border: #ddd;
+        --table-header-bg: #f8f9fa;
+        --table-border: #dee2e6;
+        --table-hover: #f8f9fa;
+    }
+    
+    body[data-theme="dark"] .content-wrapper,
+    body[data-theme="dark"] .card {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+    }
+    
+    /* Main attendance section styles */
+    .attendance-section {
+        padding: 20px;
+    }
+    
+    .page-heading {
+        margin-bottom: 25px;
+        color: var(--text-color);
+    }
+    
+    .attendance-card {
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        box-shadow: var(--box-shadow);
+        padding: 25px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Form elements styling */
+    .form-group label {
+        color: var(--label-color);
         font-weight: 500;
+        margin-bottom: 8px;
     }
     
-    .custom-control-input:checked ~ .custom-control-label[for="status_absent"] {
-        color: #dc3545;
-        font-weight: 500;
+    .form-control {
+        background-color: var(--input-bg);
+        border: 1px solid var(--input-border);
+        color: var(--input-color);
+        border-radius: 4px;
+        padding: 10px 15px;
+        transition: border-color 0.3s ease-in-out;
     }
     
-    .custom-control-label {
-        padding: 3px 0;
-        cursor: pointer;
-        transition: all 0.2s ease;
+    .form-control:focus {
+        border-color: #2d4263;
+        box-shadow: 0 0 0 0.2rem rgba(45, 66, 99, 0.25);
+        background-color: var(--input-bg);
+        color: var(--input-color);
     }
     
-    .custom-control-label:hover {
+    .form-text {
+        color: var(--label-color);
         opacity: 0.8;
     }
     
-    .custom-control-input:checked ~ .custom-control-label::before {
-        border-color: #007bff;
-        background-color: #007bff;
+    select.form-control {
+        background-color: var(--input-bg);
+        color: var(--input-color);
     }
     
-    .btn-take-attendance {
-        margin-top: 20px;
-        background-color: #17a2b8;
-        color: white;
-        padding: 10px 20px;
+    /* Student info display */
+    .student-info {
+        display: none;
+        opacity: 0;
+        transform: translateY(10px);
         transition: all 0.3s ease;
     }
     
-    .btn-take-attendance:hover {
-        background-color: #138496;
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    /* Auto-selected subject styles */
-    .form-control-static {
-        background-color: #f8f9fa;
-        border-radius: 4px;
-        padding: 8px 12px !important;
-        border: 1px solid #e9ecef;
-    }
-    
-    .auto-selected-text {
-        color: #28a745;
-        font-size: 0.85rem;
-        font-style: italic;
-        margin-left: 5px;
-    }
-    
-    .subject-info-note {
-        color: #17a2b8;
-        font-size: 0.85rem;
-        margin-top: 5px;
+    .student-info.active {
         display: block;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .student-consolidated-info {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 20px;
+        margin-bottom: 30px;
+        gap: 20px;
+    }
+    
+    .student-info-left {
+        flex: 1;
+        min-width: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 15px;
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+    
+    .student-info-right {
+        flex: 2;
+        min-width: 300px;
+    }
+    
+    /* Student photo */
+    .student-photo-container {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        overflow: hidden;
+        margin-bottom: 20px;
+        position: relative;
+        background-color: var(--input-bg);
+        border: 3px solid var(--border-color);
+    }
+    
+    .student-photo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+    }
+    
+    .student-photo-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+        font-size: 48px;
+    }
+    
+    /* QR Code display */
+    .qr-info-section {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+        margin-top: 10px;
+    }
+    
+    .qr-code-container {
+        width: 150px;
+        height: 180px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .qr-code-image {
+        width: 150px;
+        height: 150px;
+        background-color: #fff; /* Keep background white for QR code scanability */
+        padding: 5px;
+        border: 1px solid var(--border-color);
+    }
+    
+    .student-id-code {
+        margin-top: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-color);
+    }
+    
+    /* Student data table */
+    .student-data-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--table-border);
+    }
+    
+    .student-data-table th {
+        background-color: var(--table-header-bg);
+        color: var(--text-color);
+        text-align: left;
+        padding: 12px 15px;
+        font-weight: 600;
+        border-bottom: 2px solid var(--table-border);
+    }
+    
+    .student-data-table td {
+        padding: 10px 15px;
+        border-bottom: 1px solid var(--table-border);
+        color: var(--text-color);
+    }
+    
+    .student-data-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .student-data-table tr:hover td {
+        background-color: var(--table-hover);
+    }
+    
+    /* Course compatibility display */
+    .course-compatibility {
+        margin-top: 5px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-block;
+    }
+    
+    .course-compatible {
+        background-color: rgba(40, 167, 69, 0.15);
+        color: #28a745;
+    }
+    
+    [data-theme="dark"] .course-compatible {
+        background-color: rgba(40, 167, 69, 0.2);
+        color: #4dcf6b;
+    }
+    
+    .course-incompatible {
+        background-color: rgba(220, 53, 69, 0.15);
+        color: #dc3545;
+    }
+    
+    [data-theme="dark"] .course-incompatible {
+        background-color: rgba(220, 53, 69, 0.2);
+        color: #f16573;
+    }
+    
+    /* Attendance details section */
+    .attendance-details {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Status options */
+    .status-options {
+        display: flex;
+        gap: 15px;
+        margin-top: 5px;
+    }
+    
+    .custom-control-label {
+        color: var(--text-color);
+    }
+    
+    /* Button styling */
+    .btn-take-attendance {
+        background-color: var(--btn-bg);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        font-weight: 500;
+        margin-top: 20px;
+        width: 100%;
+        transition: background-color 0.3s ease;
+    }
+    
+    .btn-take-attendance:hover {
+        background-color: var(--btn-hover);
+        color: white;
+    }
+    
+    /* Status messages */
+    .success-message, .warning-message, .error-message {
+        display: none;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .success-message {
+        background-color: rgba(40, 167, 69, 0.15);
+        border: 1px solid rgba(40, 167, 69, 0.3);
+        color: #28a745;
+    }
+    
+    [data-theme="dark"] .success-message {
+        background-color: rgba(40, 167, 69, 0.15);
+        border: 1px solid rgba(40, 167, 69, 0.3);
+        color: #4dcf6b;
+    }
+    
+    .warning-message {
+        background-color: rgba(255, 193, 7, 0.15);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        color: #ffc107;
+    }
+    
+    [data-theme="dark"] .warning-message {
+        background-color: rgba(255, 193, 7, 0.15);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        color: #ffda6a;
+    }
+    
+    .error-message {
+        background-color: rgba(220, 53, 69, 0.15);
+        border: 1px solid rgba(220, 53, 69, 0.3);
+        color: #dc3545;
+    }
+    
+    [data-theme="dark"] .error-message {
+        background-color: rgba(220, 53, 69, 0.15);
+        border: 1px solid rgba(220, 53, 69, 0.3);
+        color: #f16573;
+    }
+    
+    .show {
+        display: block;
+    }
+    
+    /* Countdown timer */
+    .countdown-container {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: var(--countdown-bg);
+        border: 1px solid var(--countdown-border);
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .countdown-label {
+        margin-bottom: 10px;
+        font-weight: 500;
+        color: var(--text-color);
+    }
+    
+    .countdown-timer {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--text-color);
+        margin: 10px 0;
+    }
+    
+    .countdown-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 15px;
+    }
+    
+    .btn-decline {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+    }
+    
+    .btn-decline:hover {
+        background-color: #c82333;
+    }
+    
+    .btn-manual {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+    }
+    
+    .btn-manual:hover {
+        background-color: #5a6268;
+    }
+
+    /* NFC Reader styles */
+    [data-theme="dark"] .alert-info {
+        background-color: rgba(23, 162, 184, 0.15);
+        border-color: rgba(23, 162, 184, 0.3);
+        color: #5dceec;
+    }
+    
+    [data-theme="dark"] .alert-success {
+        background-color: rgba(40, 167, 69, 0.15);
+        border-color: rgba(40, 167, 69, 0.3);
+        color: #4dcf6b;
+    }
+    
+    [data-theme="dark"] .alert-danger {
+        background-color: rgba(220, 53, 69, 0.15);
+        border-color: rgba(220, 53, 69, 0.3);
+        color: #f16573;
+    }
+    
+    [data-theme="dark"] .btn-outline-info {
+        color: #5dceec;
+        border-color: #5dceec;
+    }
+    
+    [data-theme="dark"] .btn-outline-info:hover {
+        background-color: rgba(23, 162, 184, 0.2);
+        color: #5dceec;
+    }
+    
+    [data-theme="dark"] .btn-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    [data-theme="dark"] .btn-primary:hover {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+    }
+    
+    [data-theme="dark"] .btn-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    [data-theme="dark"] .btn-danger:hover {
+        background-color: #bb2d3b;
+        border-color: #b02a37;
+    }
+    
+    /* Date validator styles for dark mode */
+    [data-theme="dark"] .date-valid {
+        background-color: rgba(40, 167, 69, 0.15);
+        color: #4dcf6b;
+        border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+    
+    [data-theme="dark"] .date-invalid {
+        background-color: rgba(220, 53, 69, 0.15);
+        color: #f16573;
+        border: 1px solid rgba(220, 53, 69, 0.3);
     }
 </style>
 {% endblock custom_css %}
@@ -204,6 +607,19 @@
                                     </div>
                                 </div>
                                 
+                                <div class="countdown-container" id="countdown_container" style="display: none;">
+                                    <div class="countdown-label">Attendance will be automatically registered in:</div>
+                                    <div class="countdown-timer" id="countdown_timer">15</div>
+                                    <div class="countdown-buttons">
+                                        <button type="button" id="btn_cancel_timer" class="btn btn-decline">
+                                            <i class="fas fa-times-circle mr-1"></i> Decline
+                                        </button>
+                                        <button type="button" id="btn_manual_submit" class="btn btn-manual">
+                                            <i class="fas fa-hand-paper mr-1"></i> Cancel Auto-Submit
+                                        </button>
+                                    </div>
+                                </div>
+                                
                                 <button type="submit" id="attendance_button" class="btn btn-take-attendance">
                                     <i class="fas fa-check-circle mr-2"></i>Take Attendance
                                 </button>
@@ -235,6 +651,8 @@
 
 {% block custom_js %}
 <script src="{% static 'dist/js/student-info-table.js' %}"></script>
+<script src="{% static 'dist/js/nfc-reader.js' %}"></script>
+<script src="{% static 'dist/js/pcsc-nfc-reader.js' %}"></script>
 <script>
     // Additional script for handling subject selection
     document.addEventListener('DOMContentLoaded', function() {

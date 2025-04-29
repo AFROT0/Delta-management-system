@@ -39,12 +39,57 @@
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css" rel="stylesheet">
     
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@x.x.x/dist/select2-bootstrap4.min.css" rel="stylesheet" />
+    
     <!-- Custom CSS Files -->
     <link rel="stylesheet" href="{% static 'dist/css/theme-styles.css'%} ">
     <link rel="stylesheet" href="{% static 'dist/css/sidebar-styles.css'%} ">
     <link rel="stylesheet" href="{% static 'dist/css/interactive-elements.css'%} ">
     <link rel="stylesheet" href="{% static 'dist/css/form-styles.css'%} ">
     <link rel="stylesheet" href="{% static 'dist/css/digital-clock.css'%} ">
+    
+    <style>
+        /* Critical styles applied immediately */
+        .card-dark .card-header .card-title {
+            color: rgb(241, 237, 237) !important;
+            font-weight: 500;
+        }
+        
+        /* Ensure all form controls have consistent styling */
+        .form-control {
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--input-border, rgba(0, 0, 0, 0.1));
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+        
+        .card {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        /* Custom select styling */
+        select.form-control,
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
     
     {% block custom_css %}
     {% endblock custom_css %}
@@ -173,6 +218,9 @@
     <script src="{% static 'dist/js/demo.js'%} "></script>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <!-- Custom JS Files -->
     <script src="{% static 'dist/js/theme-toggle.js'%} "></script>

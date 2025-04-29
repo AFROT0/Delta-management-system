@@ -32,49 +32,123 @@
     .attendance-table th, .attendance-table td {
         padding: 12px;
         text-align: left;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border-color);
     }
     
     .attendance-table th {
-        background-color: #f2f2f2;
+        background-color: rgba(0, 0, 0, 0.05);
         font-weight: bold;
+        color: var(--text-color);
     }
     
     .attendance-table tr:nth-child(even) {
-        background-color: #f9f9f9;
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    [data-theme="dark"] .attendance-table th {
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+    
+    [data-theme="dark"] .attendance-table tr:nth-child(even) {
+        background-color: rgba(255, 255, 255, 0.02);
     }
     
     .status-present {
-        color: green;
+        color: #28a745;
         font-weight: bold;
     }
     
     .status-absent {
-        color: red;
+        color: #dc3545;
         font-weight: bold;
     }
     
     .status-not-recorded {
-        color: #888;
+        color: var(--text-muted);
         font-style: italic;
+    }
+    
+    [data-theme="dark"] .status-present {
+        color: #48bb78;
+    }
+    
+    [data-theme="dark"] .status-absent {
+        color: #f56565;
+    }
+    
+    [data-theme="dark"] .status-not-recorded {
+        color: var(--text-muted);
+    }
+    
+    /* Attendance status toggles */
+    .status-toggle {
+        cursor: pointer;
+        padding: 6px 12px;
+        border-radius: 4px;
+        display: inline-block;
+        transition: all 0.2s ease;
+    }
+    
+    .toggle-present {
+        background-color: rgba(40, 167, 69, 0.15);
+        border: 1px solid rgba(40, 167, 69, 0.3);
+        color: var(--text-color);
+    }
+    
+    .toggle-present:hover {
+        background-color: rgba(40, 167, 69, 0.25);
+    }
+    
+    .toggle-absent {
+        background-color: rgba(220, 53, 69, 0.15);
+        border: 1px solid rgba(220, 53, 69, 0.3);
+        color: var(--text-color);
+    }
+    
+    .toggle-absent:hover {
+        background-color: rgba(220, 53, 69, 0.25);
+    }
+    
+    [data-theme="dark"] .toggle-present {
+        background-color: rgba(40, 167, 69, 0.10);
+    }
+    
+    [data-theme="dark"] .toggle-absent {
+        background-color: rgba(220, 53, 69, 0.10);
+    }
+    
+    .toggle-active {
+        font-weight: bold;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
     }
     
     /* Recent attendance records card */
     .recent-attendance-card {
         margin-top: 30px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        box-shadow: var(--card-shadow);
         border-radius: 8px;
         overflow: hidden;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
     }
     
     .recent-attendance-card .card-header {
-        background-color: #343a40;
-        color: white;
+        background-color: var(--card-bg);
+        color: var(--text-color);
         padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color);
     }
     
     .recent-attendance-card .card-body {
         padding: 0;
+    }
+    
+    [data-theme="dark"] .recent-attendance-card {
+        background-color: var(--card-bg);
+    }
+    
+    [data-theme="dark"] .recent-attendance-card .card-header {
+        background-color: var(--card-bg);
     }
     
     .recent-records-table {
@@ -83,49 +157,44 @@
     }
     
     .recent-records-table th {
-        background-color: #f5f5f5;
+        background-color: rgba(0, 0, 0, 0.05);
         padding: 12px 15px;
         text-align: left;
         font-weight: 600;
-        border-bottom: 2px solid #dee2e6;
+        border-bottom: 2px solid var(--border-color);
+        color: var(--text-color);
     }
     
     .recent-records-table td {
         padding: 12px 15px;
-        border-bottom: 1px solid #dee2e6;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-color);
     }
     
     .recent-records-table tr:hover {
-        background-color: #f8f9fa;
+        background-color: rgba(0, 0, 0, 0.02);
     }
     
-    .time-ago {
-        font-size: 0.85em;
-        color: #6c757d;
+    [data-theme="dark"] .recent-records-table th {
+        background-color: rgba(0, 0, 0, 0.2);
     }
     
-    .badge-attendance {
-        padding: 5px 10px;
-        border-radius: 20px;
-        font-weight: 500;
+    [data-theme="dark"] .recent-records-table tr:hover {
+        background-color: rgba(255, 255, 255, 0.05);
     }
     
-    .attendance-progress {
-        height: 8px;
-        border-radius: 4px;
-        margin-top: 5px;
-    }
-    
+    /* Empty records state */
     .empty-records {
         padding: 30px;
         text-align: center;
-        color: #6c757d;
+        color: var(--text-muted);
     }
     
     .empty-records i {
         font-size: 3rem;
         margin-bottom: 15px;
         display: block;
+        color: var(--text-muted);
     }
     
     .student-list {
@@ -743,15 +812,18 @@
                             var student = enrolledStudents[i];
                             var attendanceRecord = attendanceMap[student.id];
                             
-                            // CHANGE HERE: From "Not Recorded" to "Absent"
-                            var status = "Absent";  // Change from "Not Recorded" to "Absent"
-                            var statusClass = "status-absent";  // Change from "status-not-recorded" to "status-absent"
+                            var status = "Absent";  
+                            var statusClass = "status-absent";
+                            var recordId = "null";
+                            var isPresent = false;
                             
                             if (attendanceRecord) {
-                                status = attendanceRecord.status ? "Present" : "Absent";
-                                statusClass = attendanceRecord.status ? "status-present" : "status-absent";
+                                recordId = attendanceRecord.id;
+                                isPresent = attendanceRecord.status;
+                                status = isPresent ? "Present" : "Absent";
+                                statusClass = isPresent ? "status-present" : "status-absent";
                                 
-                                if (attendanceRecord.status) {
+                                if (isPresent) {
                                     presentCount++;
                                 } else {
                                     absentCount++;
@@ -760,10 +832,18 @@
                                 absentCount++;
                             }
                             
+                            // Create toggle buttons for attendance status
+                            var statusToggle = `
+                                <div class="attendance-toggle" data-student-id="${student.id}" data-record-id="${recordId}">
+                                    <span class="status-toggle toggle-present ${isPresent ? 'toggle-active' : ''}" data-status="true">Present</span>
+                                    <span class="status-toggle toggle-absent ${!isPresent ? 'toggle-active' : ''}" data-status="false">Absent</span>
+                                </div>
+                            `;
+                            
                             table_data += "<tr>" +
                                 "<td>" + (i + 1) + "</td>" +
                                 "<td>" + student.name + "</td>" +
-                                "<td class='" + statusClass + "'>" + status + "</td>" +
+                                "<td>" + statusToggle + "</td>" +
                                 "</tr>";
                         }
                         
@@ -774,16 +854,32 @@
                         var presentPercentage = Math.round((presentCount / totalStudents) * 100);
                         var absentPercentage = Math.round((absentCount / totalStudents) * 100);
                         
+                        // Add button to save attendance changes
+                        table_data = `
+                            <div class="attendance-actions" id="attendance_actions">
+                                <span class="changes-indicator" id="changes_indicator" style="display: none;">You have unsaved changes</span>
+                                <button type="button" id="save_attendance" class="btn-save-attendance" disabled>
+                                    <i class="fas fa-save"></i> Save Attendance Changes
+                                </button>
+                            </div>
+                        ` + table_data;
+                        
                         table_data += `
                             <div class="attendance-summary mt-4">
                                 <h5>Summary</h5>
                                 <p><strong>Total Students:</strong> ${totalStudents}</p>
-                                <p><strong>Present:</strong> ${presentCount} (${presentPercentage}%)</p>
-                                <p><strong>Absent:</strong> ${absentCount} (${absentPercentage}%)</p>
+                                <p><strong>Present:</strong> <span id="present_count">${presentCount}</span> (<span id="present_percentage">${presentPercentage}</span>%)</p>
+                                <p><strong>Absent:</strong> <span id="absent_count">${absentCount}</span> (<span id="absent_percentage">${absentPercentage}</span>%)</p>
                             </div>
                         `;
                         
                         $("#student_data").html(table_data);
+                        
+                        // Store the current attendance date ID for updates
+                        $("#student_data").data("attendance-date-id", attendance_date);
+                        
+                        // Add event listeners for status toggles
+                        setupAttendanceToggles();
                         
                         // Show report actions
                         $("#report_actions").show();
@@ -822,6 +918,166 @@
                 fetchBtn.html('View Students Attendance');
             });
         });
+        
+        // Function to set up attendance toggle behavior
+        function setupAttendanceToggles() {
+            // Track if there are unsaved changes
+            let hasChanges = false;
+            
+            // Handle clicks on status toggles
+            $(".status-toggle").click(function() {
+                const toggleElement = $(this);
+                const attendanceToggle = toggleElement.closest('.attendance-toggle');
+                const recordId = attendanceToggle.data('record-id');
+                const studentId = attendanceToggle.data('student-id');
+                const newStatus = toggleElement.data('status');
+                
+                // Toggle active class between present/absent buttons
+                attendanceToggle.find('.status-toggle').removeClass('toggle-active');
+                toggleElement.addClass('toggle-active');
+                
+                // Mark as changed
+                if (!attendanceToggle.hasClass('changed')) {
+                    attendanceToggle.addClass('changed');
+                    hasChanges = true;
+                    
+                    // Enable save button and show changes indicator
+                    $("#save_attendance").prop('disabled', false);
+                    $("#changes_indicator").show();
+                }
+                
+                // Update summary counts (this is just visual, actual save happens later)
+                updateSummaryCount();
+            });
+            
+            // Handle save button clicks
+            $("#save_attendance").click(function() {
+                saveAttendanceChanges();
+            });
+            
+            // Function to update summary count based on current toggles
+            function updateSummaryCount() {
+                let presentCount = 0;
+                let totalStudents = $(".attendance-toggle").length;
+                
+                // Count present students based on active toggles
+                $(".attendance-toggle").each(function() {
+                    if ($(this).find('.toggle-present').hasClass('toggle-active')) {
+                        presentCount++;
+                    }
+                });
+                
+                let absentCount = totalStudents - presentCount;
+                let presentPercentage = Math.round((presentCount / totalStudents) * 100);
+                let absentPercentage = Math.round((absentCount / totalStudents) * 100);
+                
+                // Update summary display
+                $("#present_count").text(presentCount);
+                $("#absent_count").text(absentCount);
+                $("#present_percentage").text(presentPercentage);
+                $("#absent_percentage").text(absentPercentage);
+            }
+            
+            // Function to save all attendance changes
+            function saveAttendanceChanges() {
+                const saveBtn = $("#save_attendance");
+                const originalText = saveBtn.html();
+                saveBtn.html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+                saveBtn.prop('disabled', true);
+                
+                // Get attendance date ID
+                const attendanceDateId = $("#student_data").data("attendance-date-id");
+                
+                // Find all changed attendance toggles
+                const changedToggles = $(".attendance-toggle.changed");
+                let totalToProcess = changedToggles.length;
+                let processed = 0;
+                let successCount = 0;
+                
+                if (totalToProcess === 0) {
+                    // No changes to save
+                    saveBtn.html(originalText);
+                    return;
+                }
+                
+                // Process each change
+                changedToggles.each(function() {
+                    const toggle = $(this);
+                    const recordId = toggle.data('record-id');
+                    const studentId = toggle.data('student-id');
+                    const newStatus = toggle.find('.toggle-active').data('status');
+                    
+                    // Send update to server
+                    $.ajax({
+                        url: "{% url 'update_attendance_status' %}",
+                        type: 'POST',
+                        data: {
+                            attendance_id: recordId,
+                            student_id: studentId,
+                            status: newStatus,
+                            attendance_date_id: attendanceDateId
+                        }
+                    }).done(function(response) {
+                        processed++;
+                        
+                        if (response.status === 'success') {
+                            successCount++;
+                            
+                            // Update the record ID in case this was a new record
+                            toggle.data('record-id', response.record_id);
+                            
+                            // Remove the changed class
+                            toggle.removeClass('changed');
+                        }
+                        
+                        // Check if all requests are processed
+                        if (processed === totalToProcess) {
+                            finishSaveProcess(successCount, totalToProcess);
+                        }
+                    }).fail(function(error) {
+                        processed++;
+                        console.error("Error saving attendance:", error);
+                        
+                        // Check if all requests are processed
+                        if (processed === totalToProcess) {
+                            finishSaveProcess(successCount, totalToProcess);
+                        }
+                    });
+                });
+                
+                function finishSaveProcess(successCount, totalToProcess) {
+                    // Reset button state
+                    saveBtn.html(originalText);
+                    
+                    // Show result message
+                    if (successCount === totalToProcess) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'All attendance changes saved successfully!',
+                            confirmButtonColor: '#28a745'
+                        });
+                        
+                        // Hide changes indicator and disable save button
+                        $("#changes_indicator").hide();
+                        saveBtn.prop('disabled', true);
+                        
+                        // Refresh recent attendance records to show updated data
+                        loadRecentAttendanceRecords();
+                    } else {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Partial Success',
+                            text: `Saved ${successCount} out of ${totalToProcess} changes. Some updates failed.`,
+                            confirmButtonColor: '#28a745'
+                        });
+                        
+                        // Enable save button for retrying failed changes
+                        saveBtn.prop('disabled', false);
+                    }
+                }
+            }
+        }
     });
 </script>
 {% endblock custom_js %}

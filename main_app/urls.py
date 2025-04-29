@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.urls import path
 from .EditResultView import EditResultView
-from . import hod_views, staff_views, student_views, views
+from . import hod_views, staff_views, student_views, views, nfc_views
 from django.urls import path
 from .views import get_student_attendance_data, get_recent_attendance
 
@@ -76,16 +76,18 @@ urlpatterns = [
          hod_views.delete_session, name='delete_session'),
     path("student/delete/<int:student_id>",
          hod_views.delete_student, name='delete_student'),
+    path("student/delete/multiple/",
+         hod_views.delete_multiple_students, name='delete_multiple_students'),
     path("student/edit/<int:student_id>",
          hod_views.edit_student, name='edit_student'),
     path("course/edit/<int:course_id>",
          hod_views.edit_course, name='edit_course'),
     path("subject/edit/<int:subject_id>",
          hod_views.edit_subject, name='edit_subject'),
-    path("get_subjects_for_course/", hod_views.get_subjects_for_course,
-         name='get_subjects_for_course'),
     path("generate_qr_codes/", hod_views.generate_qr_codes,
          name='generate_qr_codes'),
+    path("get_subjects_for_course/", hod_views.get_subjects_for_course, 
+         name='get_subjects_for_course'),
 
 
     # Staff
@@ -100,12 +102,14 @@ path("staff/attendance/take/qr/", staff_views.staff_take_attendance_by_qr,
       name='staff_take_attendance_by_qr'),
 path("staff/get_student_information/", staff_views.get_student_information, 
      name='staff_get_student_information'),
-path("staff/attendance/view/", staff_views.staff_view_attendance, 
-     name='staff_view_attendance'),
-path("staff/get_students/", staff_views.get_students, 
-     name='get_students'),
+path("staff/attendance/view/", staff_views.staff_view_attendance,
+    name='staff_view_attendance'),
 path("staff/attendance/fetch/", staff_views.get_student_attendance,
-      name='get_student_attendance'),
+    name='get_student_attendance'),
+path("staff/attendance/update/", staff_views.update_attendance_status,
+    name='update_attendance_status'),
+path("staff/students/", staff_views.get_enrolled_students,
+    name='get_students'),
 path("staff/fcmtoken/", staff_views.staff_fcmtoken, 
      name='staff_fcmtoken'),
 path("staff/view/notification/", staff_views.staff_view_notification,
@@ -136,4 +140,9 @@ path("staff/export_attendance/", staff_views.export_attendance_to_excel,
     path('student/view/result/', student_views.student_view_result,
          name='student_view_result'),
     path("get_enrolled_students/", staff_views.get_enrolled_students, name='get_enrolled_students'),
+    
+    # NFC API Endpoints
+    path("api/nfc/status/", nfc_views.nfc_status, name='nfc_status'),
+    path("api/nfc/read/", nfc_views.nfc_read, name='nfc_read'),
+    path("api/nfc/stop/", nfc_views.nfc_stop, name='nfc_stop'),
 ]
