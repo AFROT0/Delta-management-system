@@ -1,0 +1,14 @@
+.barcode-box {
+    width: 150px; /* Adjust the width as needed */
+    height: auto;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.action-buttons .btn {
+    padding: 5px 10px; /* Adjust the padding as needed */
+    font-size: 12px; /* Adjust the font size as needed */
+}

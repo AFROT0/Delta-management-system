@@ -1,0 +1,636 @@
+/* 3D Input Effect Styles */
+.form-control-container,
+.form-group {
+    position: relative;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    margin-bottom: 1rem;
+}
+
+.form-control,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+    transform-style: preserve-3d;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--input-bg, #ffffff);
+    border: 2px solid var(--input-border, rgba(0, 0, 0, 0.1));
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    font-weight: 500;
+    position: relative;
+}
+
+.form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: var(--input-bg-dark, rgba(15, 23, 42, 0.8));
+    border-color: var(--input-border-dark, rgba(99, 102, 241, 0.2));
+    color: var(--text-color-dark, #F9FAFB);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+    border-color: var(--primary-color-dark, #818CF8);
+    box-shadow: 0 0 0 4px var(--input-focus-ring-dark, rgba(129, 140, 248, 0.15));
+}
+
+/* Forms and inputs */
+.form-control {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    background-color: var(--input-bg);
+    border-color: var(--input-focus);
+    color: var(--text-color);
+    box-shadow: 0 0 0 0.2rem rgba(116, 185, 255, 0.25);
+}
+
+.input-group-text {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+/* Form labels */
+.form-group label {
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+/* Dark mode specific form styles */
+[data-theme="dark"] .form-control {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .form-control:focus {
+    background-color: var(--input-bg);
+    border-color: var(--primary-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .form-group label {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] select.form-control option {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .input-group-text {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+/* Card styles for forms */
+.card-dark {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .card-dark {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.card-dark .card-header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .card-dark .card-header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.card-dark .card-title {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+[data-theme="dark"] .card-dark .card-title {
+    color: var(--text-color);
+}
+
+/* Card header text style - applied globally */
+.card-dark .card-header .card-title {
+    color: rgb(241, 237, 237) !important;
+    font-weight: 500;
+}
+
+/* Form validation styles */
+.form-control.is-invalid {
+    border-color: #dc3545;
+    background-color: var(--input-bg);
+}
+
+[data-theme="dark"] .form-control.is-invalid {
+    border-color: #dc3545;
+    background-color: var(--input-bg);
+}
+
+.invalid-feedback {
+    color: #dc3545;
+}
+
+[data-theme="dark"] .invalid-feedback {
+    color: #ff6b6b;
+}
+
+/* Form help text */
+.form-text {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .form-text {
+    color: var(--text-muted);
+}
+
+/* File input specific styles */
+.custom-file-label {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .custom-file-label {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+.custom-file-label::after {
+    background-color: var(--primary-color);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .custom-file-label::after {
+    background-color: var(--primary-color);
+    color: #ffffff;
+}
+
+/* Buttons */
+.btn-primary {
+    background: var(--btn-primary-bg);
+    border: none;
+    box-shadow: var(--card-shadow);
+}
+
+.btn-primary:hover {
+    background: var(--btn-primary-hover);
+    box-shadow: var(--hover-shadow);
+}
+
+/* Form controls global styling */
+.form-control,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+    transform-style: preserve-3d;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--input-bg, #ffffff);
+    border: 2px solid var(--input-border, rgba(0, 0, 0, 0.1));
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    font-weight: 500;
+    position: relative;
+}
+
+/* Consistent focus styling */
+.form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+/* Consistent form group styling */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* Button styling consistency */
+.btn {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary,
+.btn-success,
+.btn-info,
+.btn-warning,
+.btn-danger {
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* Card consistency */
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    padding: 1rem 1.25rem;
+    background-color: var(--card-bg);
+}
+
+.card-header .card-title {
+    margin-bottom: 0;
+}
+
+/* Add consistent card header styling for all cards, not just card-dark */
+.card .card-header .card-title {
+    font-weight: 500;
+}
+
+.card-dark .card-header .card-title {
+    color: rgb(241, 237, 237) !important;
+    font-weight: 500;
+}
+
+/* Table styling for forms */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    background-color: transparent;
+}
+
+.table th, 
+.table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+    border-top: 1px solid var(--border-color);
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid var(--border-color);
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+.table-bordered {
+    border: 1px solid var(--border-color);
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid var(--border-color);
+}
+
+/* Enhanced Select Element Styling */
+select.form-control,
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+    padding-right: 2.5rem;
+    cursor: pointer;
+    color: var(--text-color);
+    border: 2px solid var(--input-border, rgba(0, 0, 0, 0.1));
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+select.form-control:focus,
+select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    outline: none;
+}
+
+select.form-control option,
+select option {
+    padding: 10px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] select.form-control,
+[data-theme="dark"] select {
+    background-color: var(--input-bg-dark, rgba(15, 23, 42, 0.8));
+    border-color: var(--input-border-dark, rgba(99, 102, 241, 0.2));
+    color: var(--text-color-dark, #F9FAFB);
+}
+
+[data-theme="dark"] select.form-control option,
+[data-theme="dark"] select option {
+    background-color: var(--card-bg-dark, #1e293b);
+    color: var(--text-color-dark, #F9FAFB);
+}
+
+/* Fix for Firefox showing native arrow */
+select::-ms-expand {
+    display: none;
+}
+
+/* Ensure Select2 integration */
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+    border: 2px solid var(--input-border, rgba(0, 0, 0, 0.1));
+    border-radius: 10px;
+    padding: 0.5rem;
+    min-height: 3rem;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100%;
+}
+
+/* Improve dropdown appearance */
+.dropdown-menu {
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.dropdown-item {
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s;
+}
+
+.dropdown-item:hover, 
+.dropdown-item:focus {
+    background-color: rgba(79, 70, 229, 0.1);
+}
+
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--card-bg-dark, #1e293b);
+    border-color: var(--border-color-dark, rgba(255, 255, 255, 0.1));
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: var(--text-color-dark, #F9FAFB);
+}
+
+[data-theme="dark"] .dropdown-item:hover, 
+[data-theme="dark"] .dropdown-item:focus {
+    background-color: rgba(129, 140, 248, 0.2);
+}
+
+/* Attendance Card Styles */
+.attendance-card {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.attendance-card .card-header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+}
+
+.attendance-card .card-body {
+    padding: 1.5rem;
+}
+
+[data-theme="dark"] .attendance-card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .attendance-card .card-header {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+/* Attendance table styles with dark mode support */
+.attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.attendance-table th, 
+.attendance-table td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid var(--border-color);
+}
+
+.attendance-table th {
+    background-color: var(--card-bg);
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.attendance-table tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .attendance-table th {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .attendance-table tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Status indicators */
+.status-present {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.status-absent {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.status-not-recorded {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+[data-theme="dark"] .status-present {
+    color: #48bb78;
+}
+
+[data-theme="dark"] .status-absent {
+    color: #f56565;
+}
+
+[data-theme="dark"] .status-not-recorded {
+    color: var(--text-muted);
+}
+
+/* Session info box with dark mode support */
+.session-info {
+    background: linear-gradient(145deg, rgba(248, 253, 255, 0.05) 0%, rgba(233, 247, 251, 0.05) 100%);
+    border-left: 4px solid var(--primary-color);
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.session-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.session-info p {
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+}
+
+.session-info strong {
+    font-weight: 600;
+    color: var(--text-color);
+    min-width: 120px;
+    margin-right: 10px;
+}
+
+.session-info p span {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .session-info {
+    background: linear-gradient(145deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.3) 100%);
+    border-left: 4px solid var(--primary-color);
+}
+
+[data-theme="dark"] .session-info p {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Recent attendance record styling */
+.recent-attendance-card {
+    margin-top: 30px;
+    box-shadow: var(--card-shadow);
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.recent-attendance-card .card-header {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.recent-attendance-card .card-body {
+    padding: 0;
+}
+
+[data-theme="dark"] .recent-attendance-card {
+    background-color: var(--card-bg);
+}
+
+[data-theme="dark"] .recent-attendance-card .card-header {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+.recent-records-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.recent-records-table th {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.recent-records-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.recent-records-table tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .recent-records-table th {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .recent-records-table tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.time-ago {
+    font-size: 0.85em;
+    color: var(--text-muted);
+}
+
+    
+
+    

@@ -1,0 +1,375 @@
+/* Interactive Elements Base Styles */
+.interactive-element {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* Highlight Line Effect */
+.highlight-line {
+    position: absolute;
+    pointer-events: none;
+    z-index: 2;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.15), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.highlight-line.vertical {
+    width: 2px;
+    height: 100%;
+    top: 0;
+    transform: scaleY(0);
+}
+
+.highlight-line.horizontal {
+    height: 2px;
+    width: 100%;
+    left: 0;
+    transform: scaleX(0);
+}
+
+.highlight-line.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Content Header and Page Title */
+.content-header {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    margin: 1rem;
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+}
+
+.content-header h1.m-0.text-dark {
+    color: var(--text-color) !important;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    margin-bottom: 0.5rem !important;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .content-header {
+    background: linear-gradient(135deg, #1f2937, #111827);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .content-header h1.m-0.text-dark {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Breadcrumb improvements */
+.breadcrumb {
+    background: transparent;
+    padding: 0.5rem;
+    margin: 0;
+}
+
+.breadcrumb-item a {
+    color: var(--primary-color) !important;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.breadcrumb-item.active {
+    color: var(--text-muted) !important;
+    font-weight: 400;
+}
+
+[data-theme="dark"] .breadcrumb-item a {
+    color: var(--primary-color) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .breadcrumb-item.active {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: var(--hover-shadow);
+    border-color: var(--primary-color);
+    background: var(--primary-color);
+}
+
+.theme-toggle:hover i {
+    color: #ffffff !important;
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
+}
+
+.theme-toggle i {
+    font-size: 24px;
+    color: var(--icon-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle .sun-icon {
+    position: absolute;
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+}
+
+.theme-toggle .moon-icon {
+    position: absolute;
+    opacity: 1;
+    transform: rotate(0) scale(1);
+}
+
+[data-theme="dark"] .theme-toggle {
+    background: var(--primary-color);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+    background: var(--btn-primary-hover);
+}
+
+[data-theme="dark"] .theme-toggle i {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .theme-toggle .sun-icon {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+}
+
+[data-theme="dark"] .theme-toggle .moon-icon {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+}
+
+/* Statistics Cards */
+.small-box {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    border: none;
+}
+
+.small-box:hover {
+    transform: translateY(-5px);
+}
+
+.small-box .inner {
+    padding: 10px;
+    z-index: 2;
+    position: relative;
+}
+
+.small-box h3 {
+    font-size: 42px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    padding: 0;
+    color: #ffffff !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    letter-spacing: 0.5px;
+}
+
+.small-box p {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: #ffffff !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.95;
+}
+
+/* Ensure inner content stays above overlay */
+.small-box .inner {
+    z-index: 2;
+}
+
+/* Responsive text sizes */
+@media (max-width: 1200px) {
+    .small-box h3 {
+        font-size: 36px;
+    }
+    .small-box p {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 992px) {
+    .small-box h3 {
+        font-size: 32px;
+    }
+    .small-box p {
+        font-size: 15px;
+    }
+}
+
+.small-box .icon {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 72px;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.small-box .icon i {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Specific colors for each stat box with improved contrast for light mode */
+.small-box.bg-info {
+    background: linear-gradient(135deg, #2196F3, #1565C0);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.small-box.bg-success {
+    background: linear-gradient(135deg, #43A047, #2E7D32);
+    box-shadow: 0 4px 12px rgba(67, 160, 71, 0.3);
+}
+
+.small-box.bg-warning {
+    background: linear-gradient(135deg, #FB8C00, #EF6C00);
+    box-shadow: 0 4px 12px rgba(251, 140, 0, 0.3);
+}
+
+.small-box.bg-danger {
+    background: linear-gradient(135deg, #E53935, #C62828);
+    box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
+}
+
+[data-theme="dark"] .small-box.bg-info {
+    background: linear-gradient(135deg, #0284c7, #0c4a6e);
+}
+
+[data-theme="dark"] .small-box.bg-success {
+    background: linear-gradient(135deg, #059669, #064e3b);
+}
+
+[data-theme="dark"] .small-box.bg-warning {
+    background: linear-gradient(135deg, #d97706, #92400e);
+}
+
+[data-theme="dark"] .small-box.bg-danger {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+}
+
+/* Add stronger overlay for better text contrast */
+.small-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, 
+        rgba(0, 0, 0, 0.2), 
+        rgba(0, 0, 0, 0.1) 30%,
+        rgba(0, 0, 0, 0.05));
+    z-index: 1;
+}
+
+.small-box:hover .icon i {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Card 3D Effect */
+.card {
+    transform-style: preserve-3d;
+    transform: translateZ(0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* Cards and containers */
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+    color: var(--text-color);
+}
+
+.card:hover {
+    box-shadow: var(--hover-shadow);
+}
+
+.card-header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-footer {
+    background-color: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+/* Footer styles */
+.main-footer {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-top: 1px solid var(--border-color);
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .main-footer {
+    background: linear-gradient(135deg, #1f2937, #111827);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.main-footer strong {
+    color: var(--text-color);
+}
+
+.main-footer a {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.main-footer a:hover {
+    color: var(--secondary-color);
+    text-decoration: none;
+}
+
+/* Version text in footer */
+.main-footer .float-right {
+    color: var(--text-muted);
+}
