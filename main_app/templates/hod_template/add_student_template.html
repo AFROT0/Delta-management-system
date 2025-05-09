@@ -1,0 +1,270 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block custom_css %}
+<style>
+    select.form-control {
+        height: auto !important;
+        padding: 8px 12px;
+        font-size: 1.1em;
+    }
+</style>
+{% endblock custom_css %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{page_title}}</h3>
+                    </div>
+
+                    <div class="card-body">
+                        <form method="POST" enctype="multipart/form-data" id="addStudentForm" autocomplete="off">
+                            {% csrf_token %}
+                            
+                            <div class="form-group">
+                                <label>First Name</label>
+                                <input type="text" class="form-control" name="first_name" required autocomplete="off">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Last Name</label>
+                                <input type="text" class="form-control" name="last_name" required autocomplete="off">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" class="form-control" name="email" id="email" required autocomplete="off">
+                                <span id="email-status"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" class="form-control" name="password" required autocomplete="new-password">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Gender</label>
+                                <select class="form-control" name="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Address</label>
+                                <textarea class="form-control" name="address" required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Course</label>
+                                <select class="form-control" name="course" id="course" required>
+                                    <option value="">Select Course</option>
+                                    {% for course in form.course.field.queryset %}
+                                    <option value="{{ course.id }}">{{ course.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Subject</label>
+                                <select class="form-control" name="subject" id="subject" required>
+                                    <option value="">Select Subject</option>
+                                    <!-- Subjects will be loaded based on course selection -->
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Session</label>
+                                <select class="form-control" name="session" required>
+                                    <option value="">Select Session</option>
+                                    {% for session in form.session.field.queryset %}
+                                    <option value="{{ session.id }}">{{ session.start_year }} - {{ session.end_year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Profile Picture</label>
+                                <input type="file" class="form-control" name="profile_pic" accept="image/*">
+                                <small class="form-text text-muted">Optional: Leave empty to skip adding a profile picture</small>
+                            </div>
+
+                            <button type="submit" class="btn btn-success">Add Student</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+$(document).ready(function(){
+    var emailField = $("#email");
+    var emailStatus = $("#email-status");
+    var submitBtn = $("button[type='submit']");
+    var checkingTimeout;
+    var form = $("#addStudentForm");
+    
+    // Clear form on page load
+    form[0].reset();
+    
+    // Handle form submission
+    form.on('submit', function(e) {
+        e.preventDefault(); // Prevent normal form submission
+        
+        // Disable submit button to prevent double submission
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Adding Student...');
+        
+        // Create FormData object to handle file uploads
+        var formData = new FormData(this);
+        
+        // Submit form via AJAX
+        $.ajax({
+            url: "{% url 'add_student' %}",
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                // Show success message
+                Swal.fire({
+                    title: 'Success!',
+                    text: response.message,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    // Reset form and clear fields
+                    form[0].reset();
+                    emailStatus.html('');
+                    submitBtn.prop('disabled', false).html('Add Student');
+                });
+            },
+            error: function(xhr, errmsg, err) {
+                // Show error message
+                var errorMessage = 'Could not add student. Please try again.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                Swal.fire({
+                    title: 'Error!',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+                submitBtn.prop('disabled', false).html('Add Student');
+            }
+        });
+    });
+    
+    emailField.on('input', function(){
+        var email = $(this).val();
+        
+        // Clear any existing timeout
+        if(checkingTimeout) {
+            clearTimeout(checkingTimeout);
+        }
+        
+        // Clear status if email is empty
+        if(!email) {
+            emailStatus.html('');
+            submitBtn.prop('disabled', false);
+            return;
+        }
+        
+        // Show checking status
+        emailStatus.html('<span class="text-info"><i class="fas fa-spinner fa-spin"></i> Checking availability...</span>');
+        
+        // Set a timeout to prevent too many requests
+        checkingTimeout = setTimeout(function() {
+            $.ajax({
+                url: "{% url 'check_email_availability' %}",
+                type: 'POST',
+                data: {
+                    'email': email,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    if(response.is_taken) {
+                        emailStatus.html('<span class="text-danger"><i class="fas fa-times-circle"></i> ' + response.error_message + '</span>');
+                        submitBtn.prop('disabled', true);
+                    } else {
+                        emailStatus.html('<span class="text-success"><i class="fas fa-check-circle"></i> ' + response.success_message + '</span>');
+                        submitBtn.prop('disabled', false);
+                    }
+                },
+                error: function(xhr) {
+                    emailStatus.html('<span class="text-danger"><i class="fas fa-exclamation-circle"></i> Error checking email availability</span>');
+                    submitBtn.prop('disabled', true);
+                }
+            });
+        }, 500); // Wait 500ms after user stops typing
+    });
+    
+    // Course selection change event
+    $("#course").on('change', function(){
+        var courseId = $(this).val();
+        var subjectDropdown = $("#subject");
+        
+        // Clear current options
+        subjectDropdown.html('<option value="">Select Subject</option>');
+        
+        // If no course is selected, return
+        if(!courseId) {
+            return;
+        }
+        
+        // Show loading indicator
+        subjectDropdown.prop('disabled', true).after('<span id="subject-loading" class="ml-2"><i class="fas fa-spinner fa-spin"></i> Loading subjects...</span>');
+        
+        // Fetch subjects for the selected course
+        $.ajax({
+            url: "{% url 'get_subjects_for_course' %}",
+            type: 'POST',
+            data: {
+                'course_id': courseId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                // Remove loading indicator
+                $("#subject-loading").remove();
+                subjectDropdown.prop('disabled', false);
+                
+                // Populate subjects dropdown
+                if(response.subjects && response.subjects.length > 0) {
+                    $.each(response.subjects, function(index, subject) {
+                        subjectDropdown.append($('<option></option>').val(subject.id).text(subject.name));
+                    });
+                } else {
+                    subjectDropdown.append($('<option></option>').val('').text('No subjects available for this course'));
+                }
+            },
+            error: function(xhr) {
+                // Remove loading indicator and show error
+                $("#subject-loading").remove();
+                subjectDropdown.prop('disabled', false);
+                subjectDropdown.after('<div class="text-danger mt-1">Failed to load subjects. Please try again.</div>');
+            }
+        });
+    });
+});
+</script>
+{% endblock custom_js %}

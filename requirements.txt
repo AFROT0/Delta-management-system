@@ -1,0 +1,10 @@
+Django
+mysql-connector
+dj-database-url
+gunicorn
+whitenoise
+Pillow
+requests
+python-barcode
+openpyxl
+pyscard

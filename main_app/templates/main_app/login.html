@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>D.M.S | Log In</title>
+    <!-- Immediate theme application to prevent flash -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+            // Add a class to prevent transitions during page load
+            document.documentElement.classList.add('theme-loading');
+        })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+    <link rel="stylesheet" href="{% static 'dist/css/login.css' %}">
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css" rel="stylesheet">
+</head>
+
+<body class="hold-transition login-page">
+    <!-- Theme Toggle Button -->
+    <div class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon moon-icon"></i>
+        <i class="fas fa-sun sun-icon"></i>
+    </div>
+
+    <div class="split-container">
+        <div class="logo-section">
+            <div class="logo-container"></div>
+            <div class="system-name">Delta Management System</div>
+        </div>
+
+        <div class="login-section">
+            <div class="login-header">
+                <h4>Welcome Back!</h4>
+                <p>Please login to continue</p>
+            </div>
+            {% if messages %}
+            <div id="login-messages" style="display: none;">
+                {% for message in messages %}
+                <div class="message" data-text="{{ message|escapejs }}"></div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <form action="doLogin/" method="post">
+                {% csrf_token %}
+                <div class="form-control-container">
+                    <input required type="email" name="email" class="form-control" placeholder="Email">
+                </div>
+                <div class="form-control-container">
+                    <input required type="password" name="password" class="form-control" placeholder="Password">
+                </div>
+                <button type="submit" class="btn btn-login btn-block">Sign In</button>
+                <a href="{% url 'password_reset' %}" class="forgot-password">Forgot Password?</a>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+    <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'dist/js/adminlte.min.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{% static 'dist/js/login.js' %}"></script>
+</body>
+</html>

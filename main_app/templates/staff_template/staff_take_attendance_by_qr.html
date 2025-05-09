@@ -1,0 +1,731 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}Take Attendance{% endblock page_title %}
+
+{% block custom_css %}
+<link rel="stylesheet" href="{% static 'dist/css/student-table.css' %}">
+<style>
+    /* Dark mode styles for the attendance page */
+    [data-theme="dark"] {
+        --text-color: #f0f0f0;
+        --bg-color: #121212;
+        --card-bg: #1e1e1e;
+        --input-bg: #2d2d2d;
+        --input-border: #444;
+        --input-color: #e0e0e0;
+        --btn-bg: #2d4263;
+        --btn-hover: #3a5480;
+        --label-color: #c0c0c0;
+        --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        --border-color: #333;
+        --countdown-bg: rgba(20, 20, 20, 0.9);
+        --countdown-border: #444;
+        --table-header-bg: #232323;
+        --table-border: #444;
+        --table-hover: #2c2c2c;
+    }
+    
+    [data-theme="light"] {
+        --text-color: #333;
+        --bg-color: #f5f5f5;
+        --card-bg: #fff;
+        --input-bg: #fff;
+        --input-border: #ddd;
+        --input-color: #333;
+        --btn-bg: #0056b3;
+        --btn-hover: #004494;
+        --label-color: #495057;
+        --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --border-color: #ddd;
+        --countdown-bg: rgba(245, 245, 245, 0.95);
+        --countdown-border: #ddd;
+        --table-header-bg: #f8f9fa;
+        --table-border: #dee2e6;
+        --table-hover: #f8f9fa;
+    }
+    
+    body[data-theme="dark"] .content-wrapper,
+    body[data-theme="dark"] .card {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+    }
+    
+    /* Main attendance section styles */
+    .attendance-section {
+        padding: 20px;
+    }
+    
+    .page-heading {
+        margin-bottom: 25px;
+        color: var(--text-color);
+    }
+    
+    .attendance-card {
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        box-shadow: var(--box-shadow);
+        padding: 25px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Form elements styling */
+    .form-group label {
+        color: var(--label-color);
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+    
+    .form-control {
+        background-color: var(--input-bg);
+        border: 1px solid var(--input-border);
+        color: var(--input-color);
+        border-radius: 4px;
+        padding: 10px 15px;
+        transition: border-color 0.3s ease-in-out;
+    }
+    
+    .form-control:focus {
+        border-color: #2d4263;
+        box-shadow: 0 0 0 0.2rem rgba(45, 66, 99, 0.25);
+        background-color: var(--input-bg);
+        color: var(--input-color);
+    }
+    
+    .form-text {
+        color: var(--label-color);
+        opacity: 0.8;
+    }
+    
+    select.form-control {
+        background-color: var(--input-bg);
+        color: var(--input-color);
+    }
+    
+    /* Student info display */
+    .student-info {
+        display: none;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-top: 20px;
+        overflow: hidden;
+    }
+    
+    .student-info.active {
+        display: block;
+    }
+    
+    .student-consolidated-info {
+        display: flex;
+        padding: 15px;
+        background-color: var(--card-bg);
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .student-info-left {
+        flex: 0 0 180px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-right: 20px;
+    }
+    
+    .student-info-right {
+        flex: 1;
+    }
+    
+    /* Student photo */
+    .student-photo-container {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        overflow: hidden;
+        background-color: var(--border-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .student-photo-placeholder {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.05);
+        color: #aaa;
+    }
+    
+    .student-photo-placeholder i {
+        font-size: 4rem;
+    }
+    
+    .student-photo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+    }
+    
+    /* QR Code display */
+    .qr-info-section {
+        text-align: center;
+    }
+    
+    .qr-code-container {
+        margin-bottom: 10px;
+    }
+    
+    .qr-code-image {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        display: none;
+    }
+    
+    .student-id-code {
+        font-weight: bold;
+        font-size: 1.2em;
+        color: var(--text-color);
+        margin-top: 5px;
+    }
+    
+    /* Student data table */
+    .student-data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .student-data-table th {
+        text-align: left;
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.05);
+        color: var(--text-color);
+    }
+    
+    .student-data-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        color: var(--text-color);
+    }
+    
+    /* Dark mode adjustments */
+    [data-theme="dark"] .student-photo-placeholder {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    [data-theme="dark"] .student-data-table th {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    [data-theme="dark"] .student-data-table td {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Course compatibility indicators */
+    .course-compatibility {
+        display: inline-block;
+        margin-left: 10px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+    
+    .course-match {
+        background-color: #28a745;
+    }
+    
+    .course-mismatch {
+        background-color: #dc3545;
+    }
+    
+    /* Attendance details */
+    .attendance-details {
+        padding: 20px;
+        background-color: rgba(0, 0, 0, 0.02);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    [data-theme="dark"] .attendance-details {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .status-options {
+        display: flex;
+        margin-top: 10px;
+    }
+    
+    .custom-control {
+        margin-right: 15px;
+    }
+    
+    /* Submit button */
+    .btn-take-attendance {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 20px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s;
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .btn-take-attendance:hover {
+        background-color: var(--primary-dark);
+    }
+    
+    /* Status messages */
+    .success-message, .warning-message, .error-message {
+        display: none;
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 4px;
+        font-weight: 500;
+        transition: opacity 0.3s;
+    }
+    
+    .success-message.show, .warning-message.show, .error-message.show {
+        display: flex;
+        align-items: center;
+        opacity: 1;
+    }
+    
+    .success-message {
+        background-color: rgba(40, 167, 69, 0.15);
+        border: 1px solid rgba(40, 167, 69, 0.3);
+        color: #28a745;
+    }
+    
+    .warning-message {
+        background-color: rgba(255, 193, 7, 0.15);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        color: #ffc107;
+    }
+    
+    .error-message {
+        background-color: rgba(220, 53, 69, 0.15);
+        border: 1px solid rgba(220, 53, 69, 0.3);
+        color: #dc3545;
+    }
+    
+    .success-message i, .warning-message i, .error-message i {
+        margin-right: 10px;
+        font-size: 1.2em;
+    }
+    
+    /* Countdown */
+    .countdown-container {
+        margin: 20px 0;
+        padding: 15px;
+        border-radius: 4px;
+        background-color: rgba(0, 0, 0, 0.03);
+        text-align: center;
+    }
+    
+    [data-theme="dark"] .countdown-container {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .countdown-label {
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+    
+    .countdown-timer {
+        font-size: 3rem;
+        font-weight: 700;
+        margin: 5px 0;
+        color: var(--primary);
+    }
+    
+    .countdown-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .btn-decline {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn-decline:hover {
+        background-color: #c82333;
+    }
+    
+    .btn-manual {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .btn-manual:hover {
+        background-color: #5a6268;
+    }
+    
+    /* Modal styling */
+    #alreadyRegisteredModal .modal-header {
+        background-color: #f8d7da;
+        color: #721c24;
+        border-bottom: 1px solid #f5c6cb;
+    }
+    
+    #alreadyRegisteredModal .modal-body {
+        padding: 20px;
+    }
+    
+    #alreadyRegisteredModal .alert {
+        margin-bottom: 20px;
+    }
+    
+    #alreadyRegisteredModal .status-options {
+        margin-top: 15px;
+    }
+    
+    #updateAttendanceBtn {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #212529;
+    }
+    
+    #updateAttendanceBtn:hover {
+        background-color: #e0a800;
+        border-color: #d39e00;
+    }
+    
+    [data-theme="dark"] #alreadyRegisteredModal .modal-header {
+        background-color: rgba(248, 215, 218, 0.2);
+        color: #f8d7da;
+    }
+    
+    [data-theme="dark"] #alreadyRegisteredModal .alert-info {
+        background-color: rgba(209, 236, 241, 0.2);
+        border-color: rgba(209, 236, 241, 0.4);
+        color: #d1ecf1;
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="attendance-card">
+                    <form id="attendanceForm" method="POST" action="{% url 'staff_take_attendance_by_qr' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="student_id" id="attendance_student_id">
+                        <input type="hidden" name="subject_id" id="attendance_subject_id">
+                        <input type="hidden" name="attendance_date" value="{{ today|date:'Y-m-d' }}">
+                        <input type="hidden" name="staff_course" id="staff_course" value="{{ request.user.staff.course.name }}">
+                        <!-- Hidden URL for student info endpoint -->
+                        <input type="hidden" id="studentInfoUrl" value="{% url 'staff_get_student_information' %}">
+                        
+                        <div class="form-group">
+                            <label for="student_id">Student ID / Code</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="student_id" id="student_id" placeholder="Enter student ID or scan QR code" required>
+                            </div>
+                            <small class="form-text text-muted">Scan QR code or enter student ID to record attendance</small>
+                        </div>
+
+                        <!-- New consolidated student info display -->
+                        <div class="student-info" id="student_info">
+                            <div class="student-consolidated-info">
+                                <!-- Left side - Photo and QR code -->
+                                <div class="student-info-left">
+                                    <!-- Student Photo -->
+                                    <div class="student-photo-container" id="student_photo_container">
+                                        <div class="student-photo-placeholder" id="student_photo_placeholder">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <img id="student_photo" class="student-photo" src="" alt="student photo">
+                                    </div>
+                                    
+                                    <!-- QR Code (shown directly in left column) -->
+                                    <div class="qr-info-section">
+                                        <div class="qr-code-container" id="qr_code_container">
+                                            <img id="qr_code_image" class="qr-code-image" src="" alt="QR Code">
+                                            <div id="student_code" class="student-id-code"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Right side - Student data table -->
+                                <div class="student-info-right">
+                                    <table class="student-data-table">
+                                        <tr>
+                                            <th colspan="2">Student Information</th>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Full Name</strong></td>
+                                            <td id="table_student_name">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Student ID</strong></td>
+                                            <td id="table_student_code">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Email</strong></td>
+                                            <td id="table_student_email">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Gender</strong></td>
+                                            <td id="table_student_gender">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Course</strong></td>
+                                            <td>
+                                                <span id="table_student_course">-</span>
+                                                <div class="course-compatibility" id="course_compatibility"></div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Session</strong></td>
+                                            <td id="table_student_session">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Academic Years</strong></td>
+                                            <td id="table_student_session_years">-</td>
+                                        </tr>
+                                    </table>
+                                    
+                                    <!-- Keep the original hidden inputs for form submission -->
+                                    <input type="hidden" id="student_name" value="">
+                                    <input type="hidden" id="student_email" value="">
+                                    <input type="hidden" id="student_gender" value="">
+                                    <input type="hidden" id="display_student_code" value="">
+                                    <input type="hidden" id="student_course" value="">
+                                    <input type="hidden" id="student_session" value="">
+                                    <input type="hidden" id="student_session_years" value="">
+                                </div>
+                            </div>
+
+                            <div class="attendance-details" id="attendance_details" style="display: none;">
+                                <div class="form-group">
+                                    <label for="subject">Subject</label>
+                                    <select class="form-control" name="subject" id="subject" required>
+                                        <option value="">Select Subject</option>
+                                        {% for subject in subjects %}
+                                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="attendance_date">Attendance Date</label>
+                                    <input type="date" class="form-control" name="attendance_date" id="attendance_date" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Attendance Status</label>
+                                    <div class="status-options">
+                                        <div class="custom-control custom-radio custom-control-inline">
+                                            <input type="radio" id="status_present" name="attendance_status" value="True" class="custom-control-input" checked>
+                                            <label class="custom-control-label" for="status_present">
+                                                <i class="fas fa-check-circle text-success mr-1"></i> Present
+                                            </label>
+                                        </div>
+                                        <div class="custom-control custom-radio custom-control-inline">
+                                            <input type="radio" id="status_absent" name="attendance_status" value="False" class="custom-control-input">
+                                            <label class="custom-control-label" for="status_absent">
+                                                <i class="fas fa-times-circle text-danger mr-1"></i> Absent
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="countdown-container" id="countdown_container" style="display: none;">
+                                    <div class="countdown-label">Attendance will be automatically registered in:</div>
+                                    <div class="countdown-timer" id="countdown_timer">15</div>
+                                    <div class="countdown-buttons">
+                                        <button type="button" id="btn_cancel_timer" class="btn btn-decline">
+                                            <i class="fas fa-times-circle mr-1"></i> Decline
+                                        </button>
+                                        <button type="button" id="btn_manual_submit" class="btn btn-manual">
+                                            <i class="fas fa-hand-paper mr-1"></i> Cancel Auto-Submit
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" id="attendance_button" class="btn btn-take-attendance">
+                                    <i class="fas fa-check-circle mr-2"></i>Take Attendance
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Status Messages -->
+                    <div id="success_message" class="success-message">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <span id="success_text"></span>
+                    </div>
+
+                    <div id="warning_message" class="warning-message">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span id="warning_text"></span>
+                    </div>
+
+                    <div id="error_message" class="error-message">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span id="error_text"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for already registered student -->
+    <div class="modal fade" id="alreadyRegisteredModal" tabindex="-1" role="dialog" aria-labelledby="alreadyRegisteredModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alreadyRegisteredModalLabel">Student Already Registered</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <p><strong>Student: </strong><span id="duplicate_student_name"></span></p>
+                        <p><strong>Subject: </strong><span id="duplicate_subject"></span></p>
+                        <p><strong>Date: </strong><span id="duplicate_date"></span></p>
+                        <p><strong>Current Status: </strong><span id="duplicate_status"></span></p>
+                    </div>
+                    <p>This student is already registered for attendance today. Would you like to modify their attendance status?</p>
+                    
+                    <div class="form-group">
+                        <label>New Attendance Status</label>
+                        <div class="status-options">
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" id="update_status_present" name="update_attendance_status" value="True" class="custom-control-input" checked>
+                                <label class="custom-control-label" for="update_status_present">
+                                    <i class="fas fa-check-circle text-success mr-1"></i> Present
+                                </label>
+                            </div>
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" id="update_status_absent" name="update_attendance_status" value="False" class="custom-control-input">
+                                <label class="custom-control-label" for="update_status_absent">
+                                    <i class="fas fa-times-circle text-danger mr-1"></i> Absent
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" id="updateAttendanceBtn">Update Attendance</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script src="{% static 'dist/js/student-info-table.js' %}"></script>
+<script src="{% static 'dist/js/nfc-reader.js' %}"></script>
+<script src="{% static 'dist/js/pcsc-nfc-reader.js' %}"></script>
+<script>
+    // Additional script for handling subject selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('attendanceForm');
+        const subjectSelect = document.getElementById('subject');
+        
+        // Make sure subject_id is properly set when the form is submitted
+        form.addEventListener('submit', function(e) {
+            // Get the selected subject ID from the dropdown
+            const subjectId = subjectSelect.value;
+            
+            // If the dropdown is visible and a value is selected, set it in the hidden field
+            if (subjectSelect.style.display !== 'none' && subjectId) {
+                document.getElementById('attendance_subject_id').value = subjectId;
+            }
+            
+            // If no subject is selected and required, prevent form submission
+            if (!document.getElementById('attendance_subject_id').value) {
+                e.preventDefault();
+                showError('Please select a subject or scan another student QR code.');
+            }
+        });
+        
+        // When subject dropdown changes, update the hidden field
+        subjectSelect.addEventListener('change', function() {
+            document.getElementById('attendance_subject_id').value = this.value;
+        });
+        
+        // Re-enable student ID input when modal is dismissed
+        $('#alreadyRegisteredModal').on('hidden.bs.modal', function () {
+            document.getElementById('student_id').disabled = false;
+            document.getElementById('student_id').value = '';
+            document.getElementById('student_id').focus();
+        });
+        
+        // Update Attendance button handler
+        document.getElementById('updateAttendanceBtn').addEventListener('click', function() {
+            // Get the form data
+            const formData = new FormData(form);
+            
+            // Get the selected status
+            const newStatus = document.querySelector('input[name="update_attendance_status"]:checked').value;
+            
+            // Add the update flag and new status
+            formData.append('is_update', 'true');
+            formData.append('attendance_status', newStatus);
+            
+            // Show loading state
+            const updateBtn = this;
+            const originalText = updateBtn.textContent;
+            updateBtn.textContent = 'Updating...';
+            updateBtn.disabled = true;
+            
+            // Submit the form with the update flag
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide the modal
+                $('#alreadyRegisteredModal').modal('hide');
+                
+                if (data.status === 'success') {
+                    showSuccess(`${data.message} (Changed from ${data.old_status} to ${data.new_status})`);
+                    
+                    // Clear form fields
+                    document.getElementById('student_id').value = '';
+                    document.getElementById('student_id').disabled = false;
+                    clearStudentTableData();
+                    document.getElementById('student_info').classList.remove('active');
+                    document.getElementById('attendance_details').style.display = 'none';
+                    
+                    // Refocus on student ID input
+                    document.getElementById('student_id').focus();
+                } else {
+                    showError(data.message || 'Failed to update attendance.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('An error occurred while updating attendance.');
+            })
+            .finally(() => {
+                // Reset button state
+                updateBtn.textContent = originalText;
+                updateBtn.disabled = false;
+            });
+        });
+    });
+</script>
+{% endblock custom_js %}
