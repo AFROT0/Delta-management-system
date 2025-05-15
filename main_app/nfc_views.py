@@ -149,7 +149,7 @@ def read_card_data(timeout=1):
 
 def remove_Ten_prefix(data):
     """
-    Remove "Ten" prefix from card data if present (e.g., "TenxpV8cB" -> "xpV8cB")
+    Remove "Ten" prefix from card data if present 
     """
     if isinstance(data, str):
         # Check if data starts with "Ten" followed by actual content (exact case match)

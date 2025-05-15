@@ -122,7 +122,7 @@ class LeaveReportStaffForm(FormSettings):
 
     class Meta:
         model = LeaveReportStaff
-        fields = ['date', 'message']
+        fields = ['date', 'message', 'attachment']
         widgets = {
             'date': DateInput(attrs={'type': 'date'}),
         }
@@ -144,7 +144,7 @@ class LeaveReportStudentForm(FormSettings):
 
     class Meta:
         model = LeaveReportStudent
-        fields = ['date', 'message']
+        fields = ['date', 'message', 'attachment']
         widgets = {
             'date': DateInput(attrs={'type': 'date'}),
         }
@@ -161,12 +161,38 @@ class FeedbackStudentForm(FormSettings):
 
 
 class StudentEditForm(CustomUserForm):
+    student_code = forms.CharField(max_length=6, required=False, help_text="Unique 6-character ID for student (leaving blank will keep the current ID)")
+    
     def __init__(self, *args, **kwargs):
         super(StudentEditForm, self).__init__(*args, **kwargs)
+        if kwargs.get('instance'):
+            # Set initial student_code from the admin (CustomUser) object
+            self.fields['student_code'].initial = kwargs.get('instance').admin.student_code
+
+    def clean_student_code(self):
+        student_code = self.cleaned_data.get('student_code')
+        if not student_code:
+            # If no code provided, return the current code from instance
+            if self.instance and self.instance.pk:
+                return self.instance.admin.student_code
+            # For new student - should not happen in edit form
+            return None
+        
+        # Check if the code is unique (except for the current student)
+        if self.instance and self.instance.pk:
+            # Exclude the current student from the check
+            if CustomUser.objects.exclude(id=self.instance.admin.id).filter(student_code=student_code).exists():
+                raise forms.ValidationError("This student ID is already in use by another student.")
+        else:
+            # For new student (shouldn't happen in edit form)
+            if CustomUser.objects.filter(student_code=student_code).exists():
+                raise forms.ValidationError("This student ID is already in use by another student.")
+                
+        return student_code
 
     class Meta(CustomUserForm.Meta):
         model = Student
-        fields = CustomUserForm.Meta.fields 
+        fields = CustomUserForm.Meta.fields + ['course', 'session']
 
 
 class StaffEditForm(CustomUserForm):

@@ -953,46 +953,42 @@
                         var presentCount = 0;
                         var absentCount = 0;
                         
+                        var displayIndex = 1;
                         for (var i = 0; i < enrolledStudents.length; i++) {
                             var student = enrolledStudents[i];
                             var attendanceRecord = attendanceMap[student.id];
                             
-                            var status = "Absent";  
-                            var statusClass = "status-absent";
-                            var recordId = "null";
-                            var isPresent = false;
-                            var studentCode = "-"; // Default value if no student code
-                            
+                            // Only include students who have an attendance record
                             if (attendanceRecord) {
-                                recordId = attendanceRecord.id;
-                                isPresent = attendanceRecord.status;
-                                status = isPresent ? "Present" : "Absent";
-                                statusClass = isPresent ? "status-present" : "status-absent";
-                                studentCode = attendanceRecord.student_code || "-"; // Use student code from attendance record
+                                var recordId = attendanceRecord.id;
+                                var isPresent = attendanceRecord.status;
+                                var status = isPresent ? "Present" : "Absent";
+                                var statusClass = isPresent ? "status-present" : "status-absent";
+                                var studentCode = attendanceRecord.student_code || "-";
                                 
                                 if (isPresent) {
                                     presentCount++;
                                 } else {
                                     absentCount++;
                                 }
-                            } else {
-                                absentCount++;
+                                
+                                // Create toggle buttons for attendance status
+                                var statusToggle = `
+                                    <div class="attendance-toggle" data-student-id="${student.id}" data-record-id="${recordId}">
+                                        <span class="status-toggle toggle-present ${isPresent ? 'toggle-active' : ''}" data-status="true">Present</span>
+                                        <span class="status-toggle toggle-absent ${!isPresent ? 'toggle-active' : ''}" data-status="false">Absent</span>
+                                    </div>
+                                `;
+                                
+                                table_data += "<tr>" +
+                                    "<td>" + displayIndex + "</td>" +
+                                    "<td>" + student.name + "</td>" +
+                                    "<td>" + studentCode + "</td>" +
+                                    "<td>" + statusToggle + "</td>" +
+                                    "</tr>";
+                                    
+                                displayIndex++;
                             }
-                            
-                            // Create toggle buttons for attendance status
-                            var statusToggle = `
-                                <div class="attendance-toggle" data-student-id="${student.id}" data-record-id="${recordId}">
-                                    <span class="status-toggle toggle-present ${isPresent ? 'toggle-active' : ''}" data-status="true">Present</span>
-                                    <span class="status-toggle toggle-absent ${!isPresent ? 'toggle-active' : ''}" data-status="false">Absent</span>
-                                </div>
-                            `;
-                            
-                            table_data += "<tr>" +
-                                "<td>" + (i + 1) + "</td>" +
-                                "<td>" + student.name + "</td>" +
-                                "<td>" + studentCode + "</td>" +
-                                "<td>" + statusToggle + "</td>" +
-                                "</tr>";
                         }
                         
                         table_data += "</tbody></table></div>";

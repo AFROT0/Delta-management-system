@@ -107,7 +107,7 @@ def student_view_attendance(request):
             return JsonResponse({"error": str(e)}, status=500)
 
 def student_apply_leave(request):
-    form = LeaveReportStudentForm(request.POST or None)
+    form = LeaveReportStudentForm(request.POST or None, request.FILES or None)
     student = get_object_or_404(Student, admin_id=request.user.id)
     context = {
         'form': form,
@@ -119,12 +119,14 @@ def student_apply_leave(request):
             try:
                 obj = form.save(commit=False)
                 obj.student = student
+                if 'attachment' in request.FILES:
+                    obj.attachment = request.FILES['attachment']
                 obj.save()
                 messages.success(
                     request, "Application for leave has been submitted for review")
                 return redirect(reverse('student_apply_leave'))
-            except Exception:
-                messages.error(request, "Could not submit")
+            except Exception as e:
+                messages.error(request, f"Could not submit: {str(e)}")
         else:
             messages.error(request, "Form has errors!")
     return render(request, "student_template/student_apply_leave.html", context)

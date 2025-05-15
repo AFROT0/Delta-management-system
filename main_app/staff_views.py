@@ -456,7 +456,7 @@ def get_enrolled_students(request):
         }, status=500)
 
 def staff_apply_leave(request):
-    form = LeaveReportStaffForm(request.POST or None)
+    form = LeaveReportStaffForm(request.POST or None, request.FILES or None)
     staff = get_object_or_404(Staff, admin_id=request.user.id)
     context = {
         'form': form,
@@ -468,12 +468,14 @@ def staff_apply_leave(request):
             try:
                 obj = form.save(commit=False)
                 obj.staff = staff
+                if 'attachment' in request.FILES:
+                    obj.attachment = request.FILES['attachment']
                 obj.save()
                 messages.success(
                     request, "Application for leave has been submitted for review")
                 return redirect(reverse('staff_apply_leave'))
-            except Exception:
-                messages.error(request, "Could not apply!")
+            except Exception as e:
+                messages.error(request, f"Could not apply: {str(e)}")
         else:
             messages.error(request, "Form has errors!")
     return render(request, "staff_template/staff_apply_leave.html", context)

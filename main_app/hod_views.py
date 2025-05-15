@@ -689,7 +689,7 @@ def edit_staff(request, staff_id):
 
 def edit_student(request, student_id):
     student = get_object_or_404(Student, id=student_id)
-    form = StudentForm(request.POST or None, instance=student)
+    form = StudentEditForm(request.POST or None, request.FILES or None, instance=student)
     context = {
         'form': form,
         'student_id': student_id,
@@ -700,10 +700,10 @@ def edit_student(request, student_id):
             first_name = form.cleaned_data.get('first_name')
             last_name = form.cleaned_data.get('last_name')
             address = form.cleaned_data.get('address')
-            username = form.cleaned_data.get('username')
             email = form.cleaned_data.get('email')
             gender = form.cleaned_data.get('gender')
             password = form.cleaned_data.get('password') or None
+            student_code = form.cleaned_data.get('student_code')
             course = form.cleaned_data.get('course')
             session = form.cleaned_data.get('session')
             passport = request.FILES.get('profile_pic') or None
@@ -718,16 +718,21 @@ def edit_student(request, student_id):
                     filename = fs.save(passport.name, passport)
                     passport_url = fs.url(filename)
                     user.profile_pic = passport_url
-                user.username = username
                 user.email = email
                 if password != None:
                     user.set_password(password)
                 user.first_name = first_name
                 user.last_name = last_name
-                student.session = session
                 user.gender = gender
                 user.address = address
+                
+                # Update student fields
                 student.course = course
+                student.session = session
+                
+                # Update student code if provided and valid (validation happens in form)
+                if student_code:
+                    user.student_code = student_code
                 user.save()
                 student.save()
                 

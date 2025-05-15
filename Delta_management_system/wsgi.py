@@ -1,5 +1,5 @@
 """
-WSGI config for college_management_system project.
+WSGI config for Delta_management_system project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

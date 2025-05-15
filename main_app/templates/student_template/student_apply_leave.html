@@ -33,14 +33,24 @@
                <th>ID</th>
                <th>Date</th>
                <th>Message</th>
-                <th>Status</th>
+               <th>Attachment</th>
+               <th>Status</th>
         </tr>
         {% for leave in leave_history %}
         <tr>
             <td>{{forloop.counter}}</td>
             <td>{{leave.date}}</td>
-              <td>{{leave.message}}</td>
-              <td>
+            <td>{{leave.message}}</td>
+            <td>
+                {% if leave.attachment %}
+                <a href="{{ leave.attachment.url }}" target="_blank" class="btn btn-sm btn-info">
+                    <i class="fas fa-download"></i> View Attachment
+                </a>
+                {% else %}
+                <span class="text-muted">No attachment</span>
+                {% endif %}
+            </td>
+            <td>
                   
                   {% if leave.status == 0 %}
                   <span class="badge badge-warning">Pending</span>
