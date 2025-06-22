@@ -181,15 +181,6 @@ class NotificationStudent(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
-class StudentResult(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    test = models.FloatField(default=0)
-    exam = models.FloatField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-
 # New model to associate students with subjects
 class StudentSubject(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
@@ -218,6 +209,21 @@ class StudentCourse(models.Model):
         return f"{self.student} - {self.course}"
 
 
+class AttendanceSession(models.Model):
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    duration_minutes = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Session for {self.subject.name} ({self.course.name}) by {self.staff.admin.first_name} {self.staff.admin.last_name} - Active: {self.is_active}"
+
+
 @receiver(post_save, sender=CustomUser)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -227,6 +233,10 @@ def create_user_profile(sender, instance, created, **kwargs):
             Staff.objects.create(admin=instance)
         if instance.user_type == 3:
             Student.objects.create(admin=instance)
+
+
+
+            
 
 
 @receiver(post_save, sender=CustomUser)

@@ -219,14 +219,7 @@ def student_view_notification(request):
     return render(request, "student_template/student_view_notification.html", context)
 
 
-def student_view_result(request):
-    student = get_object_or_404(Student, admin=request.user)
-    results = StudentResult.objects.filter(student=student)
-    context = {
-        'results': results,
-        'page_title': "View Results"
-    }
-    return render(request, "student_template/student_view_result.html", context)
+# Student result view function has been removed
 
       
 @login_required

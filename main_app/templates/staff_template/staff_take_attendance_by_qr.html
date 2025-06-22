@@ -420,6 +420,44 @@
         <div class="row">
             <div class="col-12">
                 <div class="attendance-card">
+                    <!-- SESSION CONTROL UI -->
+                    <div id="session_control">
+                        <form id="sessionControlForm">
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="session_course">Course</label>
+                                    <select class="form-control" id="session_course" name="session_course" required>
+                                        <option value="">Select Course</option>
+                                        {% for subject in subjects %}
+                                            <option value="{{ subject.course.id }}">{{ subject.course.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="session_subject">Subject</label>
+                                    <select class="form-control" id="session_subject" name="session_subject" required>
+                                        <option value="">Select Subject</option>
+                                        {% for subject in subjects %}
+                                            <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="session_duration">Duration (minutes)</label>
+                                    <input type="number" class="form-control" id="session_duration" name="session_duration" min="1" value="30" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-12">
+                                    <button type="button" id="startSessionBtn" class="btn btn-success">Start Session</button>
+                                    <button type="button" id="stopSessionBtn" class="btn btn-danger" style="display:none;">Stop Session</button>
+                                    <span id="session_status_text" class="ml-3"></span>
+                                </div>
+                            </div>
+                        </form>
+                        <hr>
+                    </div>
+                    <!-- END SESSION CONTROL UI -->
                     <form id="attendanceForm" method="POST" action="{% url 'staff_take_attendance_by_qr' %}">
                         {% csrf_token %}
                         <input type="hidden" name="student_id" id="attendance_student_id">
@@ -432,7 +470,7 @@
                         <div class="form-group">
                             <label for="student_id">Student ID / Code</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="student_id" id="student_id" placeholder="Enter student ID or scan QR code" required>
+                                <input type="text" class="form-control" name="student_id" id="student_id" placeholder="Enter student ID or scan QR code" required disabled>
                             </div>
                             <small class="form-text text-muted">Scan QR code or enter student ID to record attendance</small>
                         </div>
@@ -727,5 +765,102 @@
             });
         });
     });
+
+    // --- SESSION CONTROL LOGIC ---
+    function updateSessionStatusUI(status, remaining) {
+        const statusText = document.getElementById('session_status_text');
+        const studentIdInput = document.getElementById('student_id');
+        const startBtn = document.getElementById('startSessionBtn');
+        const stopBtn = document.getElementById('stopSessionBtn');
+        if (status === 'active') {
+            statusText.textContent = `Session is ACTIVE. Time left: ${remaining} min.`;
+            studentIdInput.disabled = false;
+            startBtn.style.display = 'none';
+            stopBtn.style.display = '';
+            studentIdInput.focus();
+        } else {
+            statusText.textContent = 'Session is INACTIVE.';
+            studentIdInput.disabled = true;
+            startBtn.style.display = '';
+            stopBtn.style.display = 'none';
+        }
+    }
+    function pollSessionStatus() {
+        const subjectId = document.getElementById('session_subject').value;
+        if (!subjectId) {
+            updateSessionStatusUI('inactive');
+            return;
+        }
+        fetch(`{% url 'get_attendance_session_status' %}?subject_id=${subjectId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'active') {
+                    updateSessionStatusUI('active', data.remaining_minutes);
+                } else {
+                    updateSessionStatusUI('inactive');
+                }
+            });
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        // Poll session status every 10 seconds
+        setInterval(pollSessionStatus, 10000);
+        // Also poll on subject change
+        document.getElementById('session_subject').addEventListener('change', pollSessionStatus);
+        // Start session
+        document.getElementById('startSessionBtn').addEventListener('click', function() {
+            const courseId = document.getElementById('session_course').value;
+            const subjectId = document.getElementById('session_subject').value;
+            const duration = document.getElementById('session_duration').value;
+            if (!courseId || !subjectId || !duration) {
+                alert('Please select course, subject, and duration.');
+                return;
+            }
+            fetch("{% url 'start_attendance_session' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `course_id=${courseId}&subject_id=${subjectId}&duration_minutes=${duration}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    pollSessionStatus();
+                } else {
+                    alert(data.message || 'Failed to start session.');
+                }
+            });
+        });
+        // Stop session
+        document.getElementById('stopSessionBtn').addEventListener('click', function() {
+            const subjectId = document.getElementById('session_subject').value;
+            if (!subjectId) {
+                alert('Please select subject.');
+                return;
+            }
+            fetch("{% url 'stop_attendance_session' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `subject_id=${subjectId}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    pollSessionStatus();
+                } else {
+                    alert(data.message || 'Failed to stop session.');
+                }
+            });
+        });
+        // Initial poll
+        pollSessionStatus();
+    });
+    // --- END SESSION CONTROL LOGIC ---
 </script>
 {% endblock custom_js %}

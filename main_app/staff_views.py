@@ -10,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import Http404
 from .forms import *
 from .models import *
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.utils import timezone
 
 
@@ -506,21 +506,22 @@ def staff_feedback(request):
 
 def staff_view_profile(request):
     staff = get_object_or_404(Staff, admin=request.user)
-    form = StaffEditForm(request.POST or None, request.FILES or None,instance=staff)
+    form = StaffEditForm(request.POST or None, request.FILES or None, instance=staff)
     context = {'form': form, 'page_title': 'View/Update Profile'}
     if request.method == 'POST':
         try:
             if form.is_valid():
                 first_name = form.cleaned_data.get('first_name')
                 last_name = form.cleaned_data.get('last_name')
+                email = form.cleaned_data.get('email')
                 password = form.cleaned_data.get('password') or None
                 address = form.cleaned_data.get('address')
                 gender = form.cleaned_data.get('gender')
                 passport = request.FILES.get('profile_pic') or None
                 admin = staff.admin
-                if password != None:
+                if password is not None:
                     admin.set_password(password)
-                if passport != None:
+                if passport is not None:
                     fs = FileSystemStorage()
                     filename = fs.save(passport.name, passport)
                     passport_url = fs.url(filename)
@@ -538,7 +539,7 @@ def staff_view_profile(request):
                 return render(request, "staff_template/staff_view_profile.html", context)
         except Exception as e:
             messages.error(
-                request, "Error Occured While Updating Profile " + str(e))
+                request, "Error Occurred While Updating Profile: " + str(e))
             return render(request, "staff_template/staff_view_profile.html", context)
 
     return render(request, "staff_template/staff_view_profile.html", context)
@@ -1009,3 +1010,60 @@ def export_attendance_to_excel(request):
             'status': 'error',
             'message': f'An error occurred: {str(e)}'
         })
+
+@csrf_exempt
+@require_POST
+def start_attendance_session(request):
+    staff = get_object_or_404(Staff, admin=request.user)
+    course_id = request.POST.get('course_id')
+    subject_id = request.POST.get('subject_id')
+    duration_minutes = int(request.POST.get('duration_minutes', 0))
+    now = timezone.now()
+    if not (course_id and subject_id and duration_minutes):
+        return JsonResponse({'status': 'error', 'message': 'Missing required fields.'})
+    course = get_object_or_404(Course, id=course_id)
+    subject = get_object_or_404(Subject, id=subject_id, staff=staff)
+    # Deactivate any previous active session for this staff/subject
+    AttendanceSession.objects.filter(staff=staff, subject=subject, is_active=True).update(is_active=False, end_time=now)
+    session = AttendanceSession.objects.create(
+        staff=staff,
+        course=course,
+        subject=subject,
+        start_time=now,
+        duration_minutes=duration_minutes,
+        is_active=True
+    )
+    return JsonResponse({'status': 'success', 'session_id': session.id, 'start_time': session.start_time, 'duration_minutes': session.duration_minutes})
+
+@csrf_exempt
+@require_POST
+def stop_attendance_session(request):
+    staff = get_object_or_404(Staff, admin=request.user)
+    subject_id = request.POST.get('subject_id')
+    subject = get_object_or_404(Subject, id=subject_id, staff=staff)
+    session = AttendanceSession.objects.filter(staff=staff, subject=subject, is_active=True).first()
+    if not session:
+        return JsonResponse({'status': 'error', 'message': 'No active session found.'})
+    session.is_active = False
+    session.end_time = timezone.now()
+    session.save()
+    return JsonResponse({'status': 'success', 'session_id': session.id, 'end_time': session.end_time})
+
+@csrf_exempt
+def get_attendance_session_status(request):
+    staff = get_object_or_404(Staff, admin=request.user)
+    subject_id = request.GET.get('subject_id')
+    subject = get_object_or_404(Subject, id=subject_id, staff=staff)
+    session = AttendanceSession.objects.filter(staff=staff, subject=subject, is_active=True).first()
+    if session:
+        # Calculate remaining time
+        now = timezone.now()
+        elapsed = (now - session.start_time).total_seconds() // 60
+        remaining = session.duration_minutes - int(elapsed)
+        if remaining <= 0:
+            session.is_active = False
+            session.end_time = now
+            session.save()
+            return JsonResponse({'status': 'inactive'})
+        return JsonResponse({'status': 'active', 'remaining_minutes': remaining, 'start_time': session.start_time, 'duration_minutes': session.duration_minutes})
+    return JsonResponse({'status': 'inactive'})

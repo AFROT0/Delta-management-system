@@ -30,7 +30,7 @@ from .models import (
     Admin, Attendance, AttendanceReport, Course, CustomUser,
     FeedbackStaff, FeedbackStudent, LeaveReportStaff,
     LeaveReportStudent, NotificationStaff, NotificationStudent,
-    Session, Staff, Student, StudentResult, Subject, StudentSubject
+    Session, Staff, Student, Subject, StudentSubject
 )
 from django.core import serializers
 from django.contrib.auth.models import Group

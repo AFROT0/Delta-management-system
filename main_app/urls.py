@@ -14,7 +14,6 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .EditResultView import EditResultView
 from . import hod_views, staff_views, student_views, views, nfc_views
 from django.urls import path
 from .views import get_student_attendance_data, get_recent_attendance
@@ -122,6 +121,9 @@ path("staff/recent_attendance/", staff_views.get_recent_attendance_records,
      name="staff_recent_attendance"),
 path("staff/export_attendance/", staff_views.export_attendance_to_excel,
      name="staff_export_attendance"),
+path('staff/start_attendance_session/', staff_views.start_attendance_session, name='start_attendance_session'),
+path('staff/stop_attendance_session/', staff_views.stop_attendance_session, name='stop_attendance_session'),
+path('staff/get_attendance_session_status/', staff_views.get_attendance_session_status, name='get_attendance_session_status'),
 
 
 
@@ -141,8 +143,7 @@ path("staff/export_attendance/", staff_views.export_attendance_to_excel,
          name='student_fcmtoken'),
     path("student/view/notification/", student_views.student_view_notification,
          name="student_view_notification"),
-    path('student/view/result/', student_views.student_view_result,
-         name='student_view_result'),
+    # Removed student result view path
     path("get_enrolled_students/", staff_views.get_enrolled_students, name='get_enrolled_students'),
     
     # NFC API Endpoints
